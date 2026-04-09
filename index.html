@@ -1,0 +1,2458 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#09111f"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>Bitácora Operativa</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#09111f;--card:#0f1d30;--border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.15);
+  --text:#e8eaf0;--muted:rgba(232,234,240,.45);--blue:#3b82f6;--green:#22c55e;
+  --amber:#f59e0b;--red:#ef4444;--radius:14px;--fz:16px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:var(--fz);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;
+  background:rgba(9,17,31,.96);border-bottom:1px solid var(--border);backdrop-filter:blur(14px);}
+.topbar__meta{flex:1;min-width:0;}
+.topbar__title{font-weight:800;font-size:17px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar__sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.iconBtn{width:46px;height:46px;flex-shrink:0;border-radius:11px;border:1px solid var(--border2);
+  background:rgba(255,255,255,.07);color:var(--text);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+/* MAIN */
+#app{padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 140px);max-width:600px;margin:0 auto;}
+/* TABBAR */
+.tabBar{position:fixed;bottom:0;left:0;right:0;display:none;
+  background:rgba(9,17,31,.97);border-top:1px solid var(--border);backdrop-filter:blur(14px);
+  padding-bottom:env(safe-area-inset-bottom,0px);z-index:38;}
+.tabBar.show{display:flex;}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  padding:9px 2px 11px;color:var(--muted);border:none;background:transparent;
+  font-size:10px;font-weight:600;cursor:pointer;letter-spacing:.02em;position:relative;
+  -webkit-tap-highlight-color:transparent;transition:color .15s;}
+.tab.on{color:var(--blue);}
+.tab.on::after{content:"";position:absolute;top:0;left:20%;right:20%;height:2px;
+  background:var(--blue);border-radius:0 0 2px 2px;}
+.tab__icon{font-size:20px;line-height:1;}
+.tab__label{max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tab__dot{width:5px;height:5px;border-radius:50%;background:transparent;transition:background .2s;}
+.tab__dot.g{background:var(--green);} .tab__dot.w{background:var(--amber);}
+/* FOOTER */
+.footer{display:none;position:fixed;left:0;right:0;z-index:40;
+  background:rgba(9,17,31,.96);border-top:1px solid var(--border);backdrop-filter:blur(14px);
+  padding:10px 14px;bottom:calc(58px + env(safe-area-inset-bottom,0px));}
+.footer.show{display:block;}
+.footer__inner{max-width:600px;margin:0 auto;display:flex;gap:10px;}
+/* SHEET */
+.sheetBack{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;display:none;}
+.sheetBack.show{display:block;}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;
+  background:#0d1b2e;border-radius:20px 20px 0 0;border-top:1px solid var(--border2);
+  max-height:90dvh;display:none;flex-direction:column;}
+.sheet.show{display:flex;}
+.sheet__grip{width:36px;height:4px;border-radius:2px;background:var(--border2);
+  margin:10px auto 0;flex-shrink:0;}
+.sheet__body{overflow-y:auto;padding:14px 16px 20px;
+  padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));}
+/* PHOTO VIEWER */
+.viewer{position:fixed;inset:0;z-index:100;background:#000;display:none;flex-direction:column;}
+.viewer.show{display:flex;}
+.viewer__top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;
+  align-items:center;padding:calc(env(safe-area-inset-top,0px)+12px) 16px 12px;
+  background:linear-gradient(rgba(0,0,0,.6),transparent);z-index:2;}
+.viewer__counter{font-size:15px;font-weight:700;background:rgba(0,0,0,.4);
+  padding:6px 14px;border-radius:20px;}
+.viewer__close{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.25);
+  background:rgba(0,0,0,.4);color:#fff;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.viewer__stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;touch-action:none;}
+.viewer__spinner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:rgba(255,255,255,.5);font-size:13px;display:none;}
+.viewer__spinner.show{display:flex;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.viewer__spinner::before{content:"";width:28px;height:28px;border:2px solid rgba(255,255,255,.2);
+  border-top-color:rgba(255,255,255,.7);border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;}
+.viewer__img{max-width:100%;max-height:100%;object-fit:contain;}
+.viewer__nav{position:absolute;top:50%;transform:translateY(-50%);
+  width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.2);
+  background:rgba(0,0,0,.35);color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.viewer__nav.prev{left:8px;} .viewer__nav.next{right:8px;}
+.viewer__bottom{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:12px;
+  padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(transparent,rgba(0,0,0,.6));}
+.viewer__btn{padding:10px 22px;border-radius:10px;border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.1);color:#fff;font-size:14px;font-weight:600;cursor:pointer;backdrop-filter:blur(8px);}
+/* CARDS & LAYOUT */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;margin-bottom:12px;}
+.card h2{font-size:17px;font-weight:800;margin-bottom:10px;}
+.card h3{font-size:14px;font-weight:700;margin-bottom:6px;}
+.kpi{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.badge{display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;
+  font-size:12px;font-weight:700;border:1px solid var(--border2);background:rgba(255,255,255,.06);}
+.badge.g{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#86efac;}
+.badge.w{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.35);color:#fde68a;}
+.badge.r{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.35);color:#fca5a5;}
+.pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;
+  font-size:11px;font-weight:700;border:1px solid var(--border2);background:rgba(255,255,255,.06);}
+.pill.g{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#86efac;}
+.pill.w{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.35);color:#fde68a;}
+.pill.r{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.35);color:#fca5a5;}
+.row{display:flex;gap:10px;}
+.hr{height:1px;background:var(--border);margin:14px 0;}
+.small{font-size:13px;color:var(--muted);}
+.muted{color:var(--muted);}
+/* FORMS */
+.label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.04em;margin:14px 0 6px;}
+.input,.textarea,.select{width:100%;min-height:52px;border-radius:var(--radius);
+  border:1.5px solid var(--border2);background:rgba(255,255,255,.06);
+  padding:12px 14px;color:var(--text);font-size:var(--fz);outline:none;
+  transition:border-color .15s;-webkit-appearance:none;}
+.input:focus,.textarea:focus,.select:focus{border-color:var(--blue);}
+.textarea{min-height:90px;resize:vertical;}
+.input::placeholder,.textarea::placeholder{color:var(--muted);}
+/* BUTTONS */
+.btn{width:100%;min-height:54px;border-radius:var(--radius);border:1.5px solid var(--border2);
+  background:rgba(255,255,255,.07);color:var(--text);font-size:var(--fz);font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:opacity .15s,transform .1s;-webkit-tap-highlight-color:transparent;}
+.btn:active{transform:scale(.97);}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;}
+.btn.good{background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.5);color:#86efac;}
+.btn.danger{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:#fca5a5;}
+.btn.sm{min-height:38px;font-size:13px;padding:0 14px;width:auto;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+/* PROGRESS */
+.progWrap{margin:8px 0;}
+.progBar{width:100%;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;}
+.progFill{height:100%;background:var(--blue);border-radius:4px;transition:width .4s;}
+/* PHOTO CARDS */
+.photoStack{display:flex;flex-direction:column;gap:10px;}
+.photoCard{border-radius:12px;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid var(--border);}
+.photoCard__img{width:100%;max-height:260px;object-fit:contain;display:block;cursor:pointer;background:#000;}
+.photoCard__bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;gap:8px;}
+.photoCard__time{font-size:12px;color:var(--muted);}
+.photoAdd{width:100%;min-height:80px;border:2px dashed var(--border2);border-radius:12px;
+  background:rgba(255,255,255,.03);color:var(--muted);font-size:14px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;}
+.photoAdd:active{background:rgba(255,255,255,.07);}
+.photoAdd__icon{font-size:24px;}
+/* LIST ITEMS */
+.listItem{border-bottom:1px solid var(--border);padding:12px 0;}
+.listItem:last-child{border-bottom:none;}
+.listItem__top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.listItem__title{font-weight:700;font-size:15px;line-height:1.3;}
+/* CHECKLIST */
+.checkItem{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;
+  -webkit-tap-highlight-color:transparent;}
+.checkItem:last-child{border-bottom:none;}
+.checkBox{width:28px;height:28px;border-radius:8px;border:2px solid var(--border2);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;
+  transition:all .15s;margin-top:2px;}
+.checkItem.done .checkBox{background:var(--green);border-color:var(--green);color:#fff;}
+.checkItem__body{flex:1;}
+.checkItem__label{font-weight:600;font-size:15px;line-height:1.4;}
+.checkItem__meta{font-size:12px;color:var(--muted);margin-top:3px;}
+/* INVENTORY */
+.invRow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.invRow:last-child{border-bottom:none;}
+.invRow__check{width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.invRow.done .invRow__check{background:var(--green);border-color:var(--green);color:#fff;font-size:14px;}
+.invRow.diff .invRow__check{background:rgba(239,68,68,.2);border-color:var(--red);}
+.invRow__body{flex:1;min-width:0;}
+.invRow__name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.invRow__id{font-size:12px;color:var(--muted);margin-top:1px;}
+.invRow__counts{display:flex;gap:14px;margin-top:6px;}
+.invCount{text-align:center;}
+.invCount__val{font-weight:800;font-size:16px;}
+.invCount__lbl{font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:.04em;}
+.invStats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;}
+.invStat{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;}
+.invStat__val{font-size:22px;font-weight:800;}
+.invStat__lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-top:2px;}
+.filterTabs{display:flex;gap:6px;margin-bottom:12px;}
+.fTab{flex:1;padding:8px 4px;border-radius:8px;border:1px solid var(--border2);
+  background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.fTab.on{background:rgba(59,130,246,.2);border-color:rgba(59,130,246,.5);color:#93c5fd;}
+/* SALES */
+.statBox{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;}
+.statBox__val{font-size:18px;font-weight:800;}
+.statBox__lbl{font-size:11px;color:var(--muted);margin-top:2px;}
+/* SKU SEARCH */
+.skuResults{margin-top:8px;border-radius:12px;border:1px solid var(--border2);
+  background:#0a1628;overflow:auto;max-height:36vh;}
+.skuResultsMeta{padding:8px 12px;font-size:12px;color:var(--muted);}
+.skuResultItem{padding:10px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.05);}
+.skuResultItem:active,.skuResultItem.sel{background:rgba(59,130,246,.15);}
+.skuResultItem:last-child{border-bottom:none;}
+.skuPrimary{font-weight:700;font-size:14px;}
+.skuSecondary{font-size:12px;color:var(--muted);margin-top:1px;}
+.skuMark{color:var(--blue);background:rgba(59,130,246,.15);border-radius:3px;padding:0 2px;}
+/* SHIFT GRID */
+.shiftGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.shiftBox{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;text-align:center;}
+.shiftBox__no{font-size:20px;font-weight:800;margin-bottom:4px;}
+.shiftBox__time{font-size:12px;color:var(--muted);margin-bottom:8px;}
+.shiftBox__st{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+.shiftBox__st.avail{background:rgba(255,255,255,.06);color:var(--muted);}
+.shiftBox__st.open{background:rgba(34,197,94,.15);color:#86efac;}
+.shiftBox__st.closed{background:rgba(239,68,68,.1);color:#fca5a5;}
+/* DIFF PREVIEW */
+#diffPreview{text-align:center;padding:10px;border-radius:10px;min-height:42px;
+  font-weight:700;font-size:16px;transition:all .2s;margin:8px 0;}
+/* TOAST */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));
+  background:rgba(20,30,50,.95);color:#fff;padding:10px 20px;border-radius:10px;
+  font-size:14px;font-weight:600;white-space:nowrap;z-index:200;
+  opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center;}
+.toast.show{opacity:1;}
+/* REPORT IFRAME */
+.reportWrap{border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);height:70vh;}
+.reportFrame{width:100%;height:100%;border:none;}
+/* INPUTWRAP */
+.inputWrap{position:relative;}
+.inputWrap .input{padding-right:44px;}
+.clearBtn{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:6px;}
+.clearBtn.hidden{display:none;}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <button id="backBtn" class="iconBtn" title="Atrás">&#8592;</button>
+  <div class="topbar__meta">
+    <div class="topbar__title">Bitácora Operativa</div>
+    <div id="topbarSub" class="topbar__sub">Cargando&hellip;</div>
+  </div>
+</header>
+<main id="app"></main>
+<nav id="tabBar" class="tabBar"></nav>
+<div id="footerEl" class="footer"><div id="footerInner" class="footer__inner"></div></div>
+<div id="sheetBack" class="sheetBack"></div>
+<div id="sheetEl" class="sheet"><div class="sheet__grip"></div><div id="sheetBody" class="sheet__body"></div></div>
+<div id="viewer" class="viewer">
+  <div class="viewer__top">
+    <span id="vCounter" class="viewer__counter">1/1</span>
+    <button id="vClose" class="viewer__close">&#10005;</button>
+  </div>
+  <div class="viewer__stage">
+    <div id="vSpinner" class="viewer__spinner">Cargando</div>
+    <button id="vPrev" class="viewer__nav prev">&#8249;</button>
+    <img id="vImg" draggable="false" class="viewer__img"/>
+    <button id="vNext" class="viewer__nav next">&#8250;</button>
+  </div>
+  <div class="viewer__bottom">
+    <button id="vShare" class="viewer__btn">&#8679; Compartir</button>
+  </div>
+</div>
+<div id="toastEl" class="toast"></div>
+<input id="csvPicker" type="file" accept=".csv,text/csv" style="display:none"/>
+<script>
+(() => {
+"use strict";
+
+/* ════════════════════════════════════════════════════════════
+   CONSTANTS
+════════════════════════════════════════════════════════════ */
+const TURNS_KEY   = "bitacora_turns_v1";
+const PHOTOS_KEY  = "bitacora_photos_v1";
+const CATALOG_KEY = "bitacora_catalog_v1";
+const SHIFT_TIMES = { 1:"08:00–16:00", 2:"13:00–21:00" };
+
+const CHECKLIST_OPENING = [
+  "Luces encendidas","Cajas listas y con cambio","Limpieza general",
+  "Bolsas disponibles","Terminal / POS funcionando","Precios visibles",
+  "Anaqueles ordenados","Revisión de caducidades","Área de frutas/verduras",
+  "Cámara fría verificada","Congeladores verificados","Alta rotación completa",
+  "Promociones señalizadas","Basura retirada","Baños limpios",
+  "Entrada despejada","Bitácora anterior revisada","Asignación de tareas"
+].map((label,i)=>({id:"op_"+(i+1),label}));
+
+const CHECKLIST_CLOSING = [
+  "Limpieza del piso de venta","Limpieza de caja y mostrador","Basura retirada",
+  "Cámaras frías cerradas","Congeladores verificados","Luces secundarias apagadas",
+  "Anaqueles ordenados y surtidos","Alta rotación revisada","Caducidades del día",
+  "Efectivo asegurado / entregado","Terminal POS apagada","Accesos asegurados",
+  "Mermas registradas","Pendientes anotados en bitácora","Siguiente turno notificado"
+].map((label,i)=>({id:"cl_"+(i+1),label}));
+
+const WASTE_REASONS = ["Caducado","Roto / dañado","Derrame","Empaque abierto",
+  "Merma operacional","Robo / Merma desconocida","Diferencia de inventario","Otro"];
+
+const DEVOLUCION_MOTIVOS = ["Producto caducado","Producto dañado","Producto incorrecto",
+  "Precio incorrecto","Cantidad incorrecta","Error de cajero","No solicitado","Otro"];
+
+const LIMITS = { opPhoto:1, receiptPhotos:5, receiptEvidPhotos:5,
+  wastePhotos:3, salesPhotos:5 };
+
+/* ════════════════════════════════════════════════════════════
+   STORAGE
+════════════════════════════════════════════════════════════ */
+let appState = loadState();
+let photoStore = loadPhotos();
+let catalogStore = loadCatalog();
+
+function loadState(){
+  try{ const r=localStorage.getItem(TURNS_KEY); return r?JSON.parse(r):{days:{}}; }
+  catch(e){ return {days:{}}; }
+}
+function saveState(){
+  try{ localStorage.setItem(TURNS_KEY, JSON.stringify(appState)); return true; }
+  catch(e){ alert("Storage lleno.\n"+e?.message); return false; }
+}
+function loadPhotos(){
+  try{ const r=localStorage.getItem(PHOTOS_KEY); return r?JSON.parse(r):{}; }
+  catch(e){ return {}; }
+}
+function savePhotos(){
+  try{ localStorage.setItem(PHOTOS_KEY, JSON.stringify(photoStore)); }
+  catch(e){ alert("Storage de fotos lleno.\n"+e?.message); }
+}
+function loadCatalog(){
+  try{ const r=localStorage.getItem(CATALOG_KEY); return r?JSON.parse(r):{rows:[],source:"",importedAt:null}; }
+  catch(e){ return {rows:[],source:"",importedAt:null}; }
+}
+function saveCatalog(){
+  try{ localStorage.setItem(CATALOG_KEY, JSON.stringify(catalogStore)); }
+  catch(e){ alert("Error guardando catálogo.\n"+e?.message); }
+}
+
+/* ── Photo store ── */
+function storePhoto(dataUrl, ts){
+  const id = uid(); photoStore[id] = dataUrl; savePhotos();
+  return {id, ts: ts||nowISO()};
+}
+function photoSrc(p){
+  if(!p) return "";
+  if(p.dataUrl) return p.dataUrl; // legacy
+  return photoStore[p.id]||"";
+}
+function migrArr(arr){
+  if(!Array.isArray(arr)) return arr;
+  return arr.map(p=>p&&p.dataUrl?storePhoto(p.dataUrl,p.ts):p);
+}
+
+/* ── Purge old data ── */
+function purgeOldData(){
+  const cutoff = Date.now() - 7*24*60*60*1000;
+  const keep = new Set();
+  for(const dk in appState.days){
+    try{
+      if(parseDateKey(dk).getTime() < cutoff){ delete appState.days[dk]; continue; }
+      collectIds(appState.days[dk], keep);
+    }catch(e){}
+  }
+  let freed=0;
+  for(const id in photoStore){ if(!keep.has(id)){ delete photoStore[id]; freed++; } }
+  if(freed>0||Object.keys(appState.days).length<Object.keys(appState.days).length){
+    saveState(); savePhotos();
+    if(freed>3) toast(`🧹 ${freed} fotos antiguas liberadas`);
+  }
+}
+function collectIds(day, set){
+  for(const sl in day.turns||{}){
+    const t=day.turns[sl]; if(!t) continue;
+    t.modules?.operation?.items?.forEach(it=>it.photos?.forEach(p=>p?.id&&set.add(p.id)));
+    (t.modules?.purchases?.receipts||[]).forEach(r=>{
+      r.photos?.forEach(p=>p?.id&&set.add(p.id));
+      r.incEvidencePhotos?.forEach(p=>p?.id&&set.add(p.id));
+      r.incidences?.forEach(x=>x.incPhoto?.id&&set.add(x.incPhoto.id));
+      r.newProducts?.forEach(np=>{np.photoFront?.id&&set.add(np.photoFront.id);np.photoBarcode?.id&&set.add(np.photoBarcode.id);});
+    });
+    t.modules?.inventory?.waste?.forEach(w=>w.photos?.forEach(p=>p?.id&&set.add(p.id)));
+    t.modules?.sales?.photos?.forEach(p=>p?.id&&set.add(p.id));
+    t.modules?.sales?.withdrawals?.forEach(w=>w.photos?.forEach(p=>p?.id&&set.add(p.id)));
+  }
+}
+function migrateAll(){
+  let changed=false;
+  for(const dk in appState.days){
+    for(const sl in appState.days[dk].turns||{}){
+      const t=appState.days[dk].turns[sl]; if(!t) continue;
+      t.modules?.operation?.items?.forEach(it=>{ if(it.photos?.some(p=>p?.dataUrl)){it.photos=migrArr(it.photos);changed=true;} });
+      (t.modules?.purchases?.receipts||[]).forEach(r=>{
+        if(r.photos?.some(p=>p?.dataUrl)){r.photos=migrArr(r.photos);changed=true;}
+        if(r.incEvidencePhotos?.some(p=>p?.dataUrl)){r.incEvidencePhotos=migrArr(r.incEvidencePhotos);changed=true;}
+        r.incidences?.forEach(x=>{ if(x.incPhoto?.dataUrl){x.incPhoto=storePhoto(x.incPhoto.dataUrl,x.incPhoto.ts);changed=true;} });
+        r.newProducts?.forEach(np=>{
+          if(np.photoFront?.dataUrl){np.photoFront=storePhoto(np.photoFront.dataUrl,np.photoFront.ts);changed=true;}
+          if(np.photoBarcode?.dataUrl){np.photoBarcode=storePhoto(np.photoBarcode.dataUrl,np.photoBarcode.ts);changed=true;}
+        });
+      });
+      t.modules?.inventory?.waste?.forEach(w=>{ if(w.photos?.some(p=>p?.dataUrl)){w.photos=migrArr(w.photos);changed=true;} });
+      const s=t.modules?.sales;
+      if(s?.photos?.some(p=>p?.dataUrl)){s.photos=migrArr(s.photos);changed=true;}
+      s?.withdrawals?.forEach(w=>{ if(w.photos?.some(p=>p?.dataUrl)){w.photos=migrArr(w.photos);changed=true;} });
+    }
+  }
+  if(changed) saveState();
+}
+
+/* ════════════════════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════════════════════ */
+const $=(sel,root=document)=>root.querySelector(sel);
+function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+function nowISO(){ return new Date().toISOString(); }
+function pad2(n){ return String(n).padStart(2,"0"); }
+function dateKeyFrom(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+function parseDateKey(dk){ const [y,m,d]=String(dk).split("-").map(Number); return new Date(y,m-1,d); }
+function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+function fmtTime(v){
+  if(!v) return "–";
+  try{ const d=new Date(v); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
+  catch(e){ return "–"; }
+}
+function fmtMoney(n){
+  const v=Number(n??0);
+  return new Intl.NumberFormat("es-MX",{style:"currency",currency:"MXN"}).format(isFinite(v)?v:0);
+}
+function parseMoney(s){ const n=parseFloat(String(s).replace(/[^0-9.-]/g,"")); return isFinite(n)?n:0; }
+function escapeHtml(s){
+  return String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function normalizeText(s){ return String(s??"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim(); }
+function resolveSkuName(skuId,fallback){
+  if(!skuId) return fallback||"(desconocido)";
+  const row=catalogStore.rows.find(r=>String(r.id)===String(skuId));
+  return row?.name||fallback||String(skuId);
+}
+
+let _toastT=null;
+function toast(msg,ms=2800){
+  const el=$('#toastEl');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(_toastT);
+  _toastT=setTimeout(()=>el.classList.remove('show'),ms);
+}
+
+/* ════════════════════════════════════════════════════════════
+   TURN MANAGEMENT
+════════════════════════════════════════════════════════════ */
+const rt = {
+  route:{name:"home",params:{}},
+  stack:[],
+  active:{dateKey:null,slot:null},
+  report:null,
+  _wastePhotos:[],
+  _withdrawalPhotos:[],
+};
+
+function activeTurn(){
+  if(!rt.active.dateKey) return null;
+  return appState.days[rt.active.dateKey]?.turns?.[rt.active.slot]||null;
+}
+function isLocked(){ const t=activeTurn(); return !t||t.status==="closed"; }
+
+function openTurn(dk,slot,name,branch){
+  if(!appState.days[dk]) appState.days[dk]={turns:{}};
+  const day=appState.days[dk];
+  // check no other turn open today
+  for(const sl in day.turns){
+    if(day.turns[sl]?.status==="open")
+      return {ok:false,msg:"Hay otro turno abierto hoy. Ciérralo primero."};
+  }
+  if(day.turns[slot]?.status==="closed")
+    return {ok:false,msg:"Este turno ya fue cerrado.",code:"EXISTS"};
+  if(day.turns[slot]?.status==="open")
+    return {ok:true,existing:true};
+  const slotLabel = slot===1?"T1 — Apertura":"T2 — Cierre";
+  day.turns[slot]={
+    id:uid(), dateKey:dk, slot, slotLabel,
+    managerName:name, branch, status:"open",
+    startedAt:nowISO(), closedAt:null,
+    modules:{operation:null,purchases:null,inventory:null,sales:null}
+  };
+  saveState();
+  return {ok:true};
+}
+
+function closeTurn(dk,slot){
+  const t=appState.days[dk]?.turns?.[slot]; if(!t) return;
+  t.status="closed"; t.closedAt=nowISO(); saveState();
+}
+
+function getTurn(dk,slot){ return appState.days[dk]?.turns?.[slot]||null; }
+function findOpenTurnToday(){
+  const dk=dateKeyFrom(new Date());
+  if(!appState.days[dk]) return null;
+  for(const sl in appState.days[dk].turns){
+    const t=appState.days[dk].turns[sl];
+    if(t?.status==="open") return {dateKey:dk,slot:Number(sl)};
+  }
+  return null;
+}
+
+/* ── Module ensurers ── */
+function ensureOp(t){
+  if(t.modules.operation) return t.modules.operation;
+  const list = t.slot===2?CHECKLIST_CLOSING:CHECKLIST_OPENING;
+  const allIds=list.map(x=>x.id);
+  // pick 5 random required evidence items (seeded by turn id for consistency)
+  const seed=t.id; let rng=0;
+  for(const c of seed) rng=(rng*31+c.charCodeAt(0))>>>0;
+  const shuffled=[...allIds].sort((a,b)=>{ rng=(rng*1664525+1013904223)>>>0; return (rng&1)?1:-1; });
+  const evidIds=shuffled.slice(0,5);
+  const mod={startAt:nowISO(),endAt:null,finalized:false,evidenceIds:evidIds,
+    items:list.map(x=>({...x,done:false,doneAt:null,note:"",photos:[]}))};
+  t.modules.operation=mod; saveState(); return mod;
+}
+function ensurePurchases(t){
+  if(t.modules.purchases) return t.modules.purchases;
+  const mod={startAt:nowISO(),finalized:false,receipts:[]};
+  t.modules.purchases=mod; saveState(); return mod;
+}
+function ensureInventory(t){
+  if(t.modules.inventory) return t.modules.inventory;
+  const mod={startAt:nowISO(),endAt:null,finalized:false,lines:{},waste:[]};
+  t.modules.inventory=mod; saveState(); return mod;
+}
+function ensureSales(t){
+  if(t.modules.sales) return t.modules.sales;
+  const mod={startAt:null,endAt:null,finalized:false,corteStarted:false,
+    cashier:"",total:null,card:null,notes:"",withdrawals:[],incidences:[],photos:[]};
+  t.modules.sales=mod; saveState(); return mod;
+}
+
+/* ── Inventory math ── */
+function inventorySlice(rows,dateKey,slot){
+  if(!rows?.length) return [];
+  const d=parseDateKey(dateKey);
+  const totalDays=daysInMonth(d.getFullYear(),d.getMonth()+1);
+  const perDay=Math.ceil(rows.length/totalDays);
+  const dayStart=(d.getDate()-1)*perDay;
+  const dayEnd=Math.min(dayStart+perDay,rows.length);
+  const dayRows=rows.slice(dayStart,dayEnd);
+  const half=Math.ceil(dayRows.length/2);
+  return slot===1?dayRows.slice(0,half):dayRows.slice(half);
+}
+function inventorySliceInfo(rows,dateKey){
+  if(!rows?.length) return {dayStart:0,dayEnd:0,totalSkus:0,perDay:0,totalDays:0,dayOfMonth:0};
+  const d=parseDateKey(dateKey);
+  const totalDays=daysInMonth(d.getFullYear(),d.getMonth()+1);
+  const perDay=Math.ceil(rows.length/totalDays);
+  const dayStart=(d.getDate()-1)*perDay;
+  return {dayStart,dayEnd:Math.min(dayStart+perDay,rows.length),
+    totalSkus:rows.length,perDay,totalDays,dayOfMonth:d.getDate()};
+}
+function invLineDone(l){ return l&&l.pos!==null&&l.physical!==null; }
+function invProgress(inv,skus){
+  let done=0;
+  for(const s of skus){ const l=inv.lines[String(s.id)]; if(invLineDone(l)) done++; }
+  const total=skus.length;
+  return {done,total,pct:total?Math.round(done/total*100):0};
+}
+function getLine(inv,sku){
+  const id=String(sku.id);
+  if(!inv.lines[id]) inv.lines[id]={pos:null,physical:null,note:"",updatedAt:null};
+  return inv.lines[id];
+}
+
+/* ── Sales calc ── */
+function salesCalc(s){
+  const total=Number(s.total||0), card=Number(s.card||0);
+  const totalRetiros=(s.withdrawals||[]).filter(w=>w.validated).reduce((a,w)=>a+Number(w.amount||0),0);
+  const totalDev=(s.incidences||[]).reduce((a,x)=>a+Number(x.amount||0),0);
+  const efectivoVentas=total-card;
+  return {total,card,totalRetiros,totalDev,efectivoVentas,efectivoEnCaja:efectivoVentas-totalRetiros,totalCalculado:card+efectivoVentas+totalDev};
+}
+
+/* ── Receipt helpers ── */
+function newReceipt(t){
+  ensurePurchases(t);
+  const r={id:uid(),startAt:nowISO(),endAt:null,finalized:false,
+    supplier:"",invoiceNo:"",amount:null,
+    photos:[],incEvidencePhotos:[],incidences:[],newProducts:[]};
+  t.modules.purchases.receipts.unshift(r); saveState(); return r;
+}
+function findReceipt(t,id){ return (t.modules.purchases?.receipts||[]).find(r=>r.id===id)||null; }
+
+/* ════════════════════════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════════════════════════ */
+function setRoute(name,params={}){ rt.route={name,params}; render(); }
+function pushRoute(name,params={}){ rt.stack.push({...rt.route}); rt.route={name,params}; render(); }
+function goBack(){
+  if(rt.route.name==="operation"){
+    const t=activeTurn();
+    if(t?.modules?.operation&&!t.modules.operation.finalized){
+      openSheet(`
+        <h2 style="margin:0 0 10px">¿Salir sin finalizar?</h2>
+        <p class="small">El progreso guardado se conserva.</p>
+        <div class="hr"></div>
+        <button class="btn good" data-action="_backOk" style="margin-bottom:10px;">Salir (guardar)</button>
+        <button class="btn" data-action="sheetClose">Continuar</button>
+      `); return;
+    }
+  }
+  saveState();
+  rt.route=rt.stack.pop()||{name:"home",params:{}}; render();
+}
+
+/* ════════════════════════════════════════════════════════════
+   UI HELPERS
+════════════════════════════════════════════════════════════ */
+function showFooter(html){
+  const el=$('#footerEl'), inner=$('#footerInner');
+  inner.innerHTML=html||"";
+  el.classList.toggle('show',!!html);
+}
+function openSheet(html){
+  $('#sheetBody').innerHTML=html;
+  $('#sheetEl').classList.add('show');
+  $('#sheetBack').classList.add('show');
+}
+function closeSheet(){
+  $('#sheetEl').classList.remove('show');
+  $('#sheetBack').classList.remove('show');
+  $('#sheetBody').innerHTML="";
+}
+
+/* ── Photo picker ── */
+function pickPhoto({maxAdd,current,onAdd}){
+  return new Promise(resolve=>{
+    if(current>=maxAdd){ toast("Límite de fotos alcanzado."); resolve(); return; }
+    const inp=document.createElement("input");
+    inp.type="file"; inp.accept="image/*"; inp.capture="environment";
+    inp.style.cssText="position:fixed;top:-9999px;opacity:0;";
+    document.body.appendChild(inp);
+    let handled=false;
+    async function handle(){
+      if(handled) return; handled=true;
+      const files=Array.from(inp.files||[]);
+      try{ document.body.removeChild(inp); }catch(_){}
+      if(!files.length){ resolve(); return; }
+      const room=Math.max(0,maxAdd-current);
+      const chosen=files.slice(0,room);
+      const out=[];
+      for(const f of chosen){
+        const dataUrl=await compressPhoto(f);
+        out.push(storePhoto(dataUrl));
+      }
+      onAdd(out); resolve();
+    }
+    inp.addEventListener("change",handle);
+    inp.addEventListener("cancel",()=>{ try{document.body.removeChild(inp);}catch(_){} resolve(); });
+    setTimeout(()=>inp.click(),60);
+  });
+}
+function compressPhoto(file){
+  return new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>rej(reader.error);
+    reader.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const maxW=640,quality=0.60;
+        const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+        const scale=Math.min(1,maxW/Math.max(w,1));
+        const nw=Math.round(w*scale), nh=Math.round(h*scale);
+        const canvas=document.createElement("canvas");
+        canvas.width=nw; canvas.height=nh;
+        canvas.getContext("2d").drawImage(img,0,0,nw,nh);
+        res(canvas.toDataURL("image/jpeg",quality));
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ── Photo cards renderer ── */
+const _vStore={};let _vKey=0;
+function storeVP(arr){ const k="v"+(++_vKey); _vStore[k]=arr; return k; }
+
+function renderPhotoCards(photos,{limit,addAction,addData="",locked,addLabel="Agregar foto",delAction,delData=""}={}){
+  const vk=photos?.length?storeVP(photos):"";
+  const cards=(photos||[]).map((p,i)=>`
+    <div class="photoCard">
+      <img class="photoCard__img" src="${photoSrc(p)}" loading="lazy"
+        data-action="viewPhoto" data-vk="${vk}" data-idx="${i}" style="cursor:pointer"/>
+      <div class="photoCard__bar">
+        <span class="photoCard__time">${fmtTime(p.ts)}</span>
+        ${!locked?`<button class="btn sm danger" data-action="${delAction}" ${delData} data-idx="${i}">Eliminar</button>`:""}
+      </div>
+    </div>`).join("");
+  const addBtn=!locked&&(photos||[]).length<limit?`
+    <button class="photoAdd" data-action="${addAction}" ${addData}>
+      <span class="photoAdd__icon">📷</span><span>${addLabel} (${(photos||[]).length}/${limit})</span>
+    </button>`:"";
+  if(!(photos||[]).length && locked) return `<p class="small muted">Sin fotos.</p>`;
+  return `<div class="photoStack">${cards}${addBtn}</div>`;
+}
+
+/* ── SKU live search ── */
+function buildSkuSearch(containerId,hiddenIdEl,hiddenNameEl,badgeEl,onSelect){
+  const indexed=catalogStore.rows.map(r=>({
+    id:String(r.id??"").trim(),name:String(r.name??"").trim(),
+    nid:normalizeText(r.id),nname:normalizeText(r.name)
+  })).filter(x=>x.id&&x.name);
+
+  let selId="",lastResults=[],debT=null;
+  const cont=$(containerId);
+  if(!cont) return;
+  const searchEl=cont.querySelector(".skuSearchInput");
+  const clearBtn=cont.querySelector(".clearBtn");
+  const resultsEl=cont.querySelector(".skuResults");
+
+  function match(q){
+    const qn=normalizeText(q); if(!qn) return [];
+    const hits=[];
+    for(const it of indexed){
+      let rank=null;
+      if(it.nid.startsWith(qn))rank=0; else if(it.nname.startsWith(qn))rank=1;
+      else if(it.nid.includes(qn))rank=2; else if(it.nname.includes(qn))rank=3;
+      if(rank!==null) hits.push({it,rank});
+    }
+    hits.sort((a,b)=>(a.rank-b.rank)||a.it.nname.localeCompare(b.it.nname,"es"));
+    return hits.slice(0,30).map(x=>x.it);
+  }
+  function highlight(s,q){
+    if(!q) return escapeHtml(s);
+    const qn=normalizeText(q), sn=normalizeText(s);
+    const i=sn.indexOf(qn); if(i<0) return escapeHtml(s);
+    return escapeHtml(s.slice(0,i))+`<mark class="skuMark">${escapeHtml(s.slice(i,i+q.length))}</mark>`+escapeHtml(s.slice(i+q.length));
+  }
+  function renderResults(q){
+    if(clearBtn) clearBtn.classList.toggle("hidden",!q.trim());
+    if(!normalizeText(q)){ lastResults=[]; resultsEl.innerHTML=`<div class="skuResultsMeta">Escribe para buscar…</div>`; return; }
+    lastResults=match(q);
+    if(!lastResults.length){ resultsEl.innerHTML=`<div class="skuResultsMeta">Sin resultados</div>`; return; }
+    resultsEl.innerHTML=`<div class="skuResultsMeta">${lastResults.length} resultado${lastResults.length!==1?"s":""}</div>`+
+      lastResults.map((it,i)=>`<div class="skuResultItem" data-sidx="${i}" data-sid="${escapeHtml(it.id)}" data-snm="${escapeHtml(it.name)}">
+        <div class="skuPrimary">${highlight(it.name,q)}</div>
+        <div class="skuSecondary">${highlight(it.id,q)}</div>
+      </div>`).join("");
+  }
+  function selectSku(id,name){
+    selId=id;
+    if(hiddenIdEl) hiddenIdEl.value=id;
+    if(hiddenNameEl) hiddenNameEl.value=name;
+    if(badgeEl) badgeEl.textContent=id+" — "+name;
+    if(searchEl){ searchEl.value=name; }
+    if(clearBtn) clearBtn.classList.remove("hidden");
+    renderResults(name);
+    if(onSelect) onSelect(id,name);
+  }
+  if(searchEl) searchEl.addEventListener("input",()=>{ clearTimeout(debT); debT=setTimeout(()=>renderResults(searchEl.value),120); });
+  if(clearBtn) clearBtn.addEventListener("click",()=>{
+    selId="";
+    if(hiddenIdEl) hiddenIdEl.value="";
+    if(hiddenNameEl) hiddenNameEl.value="";
+    if(badgeEl) badgeEl.textContent="(sin seleccionar)";
+    if(searchEl){ searchEl.value=""; }
+    clearBtn.classList.add("hidden");
+    lastResults=[]; resultsEl.innerHTML=`<div class="skuResultsMeta">Escribe para buscar…</div>`;
+    if(searchEl) searchEl.focus();
+  });
+  resultsEl.addEventListener("click",e=>{
+    const item=e.target.closest("[data-sidx]"); if(!item) return;
+    const i=Number(item.getAttribute("data-sidx"));
+    const it=lastResults[i]; if(!it) return;
+    selectSku(it.id,it.name);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════
+   PHOTO VIEWER
+════════════════════════════════════════════════════════════ */
+const IV={photos:[],idx:0,scale:1,tx:0,ty:0,_sd:0,_ss:1,_stx:0,_sty:0,_tsx:0,_tsy:0,_swx:0,_lt:0};
+
+function openViewer(photos,startIdx=0){
+  if(!photos?.length) return;
+  IV.photos=photos; IV.idx=startIdx; IV.scale=1; IV.tx=0; IV.ty=0;
+  refreshViewer();
+  $('#viewer').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function closeViewer(){
+  $('#viewer').classList.remove('show');
+  document.body.style.overflow='';
+  const img=$('#vImg'); img.style.transform=''; IV.scale=1; IV.tx=0; IV.ty=0;
+}
+function refreshViewer(){
+  const img=$('#vImg'), ctr=$('#vCounter'), spinner=$('#vSpinner');
+  const prev=$('#vPrev'), next=$('#vNext');
+  if(!IV.photos.length) return;
+  spinner.classList.add('show');
+  img.style.transform=''; IV.scale=1; IV.tx=0; IV.ty=0;
+  img.onload=()=>spinner.classList.remove('show');
+  img.onerror=()=>{ spinner.textContent="⚠️ Error"; };
+  img.src=photoSrc(IV.photos[IV.idx])||'';
+  ctr.textContent=`${IV.idx+1} / ${IV.photos.length}`;
+  prev.style.display=IV.idx>0?'':'none';
+  next.style.display=IV.idx<IV.photos.length-1?'':'none';
+}
+function viewerGo(dir){ const n=IV.idx+dir; if(n<0||n>=IV.photos.length) return; IV.idx=n; refreshViewer(); }
+function viewerApply(s,tx,ty){ IV.scale=s; IV.tx=tx; IV.ty=ty; $('#vImg').style.transform=`scale(${s}) translate(${tx}px,${ty}px)`; }
+
+(function setupViewer(){
+  window.addEventListener('DOMContentLoaded',()=>{
+    const viewer=$('#viewer'), img=$('#vImg');
+    $('#vClose').addEventListener('click',closeViewer);
+    $('#vPrev').addEventListener('click',()=>viewerGo(-1));
+    $('#vNext').addEventListener('click',()=>viewerGo(1));
+    $('#vShare').addEventListener('click',async()=>{
+      const p=IV.photos[IV.idx]; if(!p) return;
+      const src=photoSrc(p); if(!src) return;
+      try{
+        const res=await fetch(src); const blob=await res.blob();
+        const file=new File([blob],`foto_${Date.now()}.jpg`,{type:'image/jpeg'});
+        if(navigator.canShare?.({files:[file]})) await navigator.share({files:[file],title:'Foto Bitácora'});
+        else{ const a=document.createElement('a'); a.href=src; a.download=`foto_${Date.now()}.jpg`; a.click(); }
+      }catch(e){ toast('No se pudo compartir'); }
+    });
+    img.addEventListener('touchstart',e=>{
+      if(e.touches.length===2){
+        IV._sd=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
+        IV._ss=IV.scale; e.preventDefault();
+      } else if(e.touches.length===1){
+        const now=Date.now();
+        if(now-IV._lt<280){ IV.scale>1?viewerApply(1,0,0):viewerApply(2.5,0,0); e.preventDefault(); }
+        IV._lt=now;
+        IV._tsx=e.touches[0].clientX; IV._tsy=e.touches[0].clientY;
+        IV._stx=IV.tx; IV._sty=IV.ty; IV._swx=e.touches[0].clientX;
+      }
+    },{passive:false});
+    img.addEventListener('touchmove',e=>{
+      if(e.touches.length===2){
+        e.preventDefault();
+        const d=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
+        viewerApply(Math.min(5,Math.max(1,IV._ss*d/IV._sd)),IV.tx,IV.ty);
+      } else if(e.touches.length===1&&IV.scale>1.05){
+        e.preventDefault();
+        viewerApply(IV.scale,IV._stx+(e.touches[0].clientX-IV._tsx)/IV.scale,IV._sty+(e.touches[0].clientY-IV._tsy)/IV.scale);
+      }
+    },{passive:false});
+    img.addEventListener('touchend',()=>{ if(IV.scale<1.05) viewerApply(1,0,0); });
+    viewer.addEventListener('touchstart',e=>{ if(e.touches.length===1) IV._swx=e.touches[0].clientX; },{passive:true});
+    viewer.addEventListener('touchend',e=>{
+      if(IV.scale>1.1) return;
+      const dx=e.changedTouches[0].clientX-IV._swx;
+      if(Math.abs(dx)>60) viewerGo(dx<0?1:-1);
+    },{passive:true});
+  });
+})();
+
+/* ════════════════════════════════════════════════════════════
+   TAB BAR
+════════════════════════════════════════════════════════════ */
+const TAB_ROUTES=["operation","purchases","inventory","sales","reports","reportPreview"];
+function updateTabBar(){
+  const t=activeTurn(), bar=$('#tabBar');
+  const inTurn=!!(t&&TAB_ROUTES.includes(rt.route.name));
+  bar.classList.toggle('show',inTurn);
+  if(!inTurn){ return; }
+  const op=t.modules.operation, inv=t.modules.inventory, sales=t.modules.sales;
+  const pur=ensurePurchases(t);
+  const recFin=(pur.receipts||[]).filter(r=>r.finalized).length;
+  const recTot=(pur.receipts||[]).length;
+  const cur=rt.route.name;
+  const tabs=[
+    {id:"operation",icon:"✅",label:t.slot===2?"Cierre":"Apertura",
+      on:cur==="operation",
+      dot:op?(op.finalized?"g":"w"):""},
+    {id:"purchases",icon:"📦",label:"Compras",
+      on:cur==="purchases"||cur==="receiptEdit",
+      dot:recTot?(recFin===recTot?"g":"w"):""},
+    {id:"inventory",icon:"📊",label:"Inventario",
+      on:cur==="inventory",
+      dot:inv?(inv.finalized?"g":"w"):""},
+    {id:"sales",icon:"💰",label:"Ventas",
+      on:cur==="sales",
+      dot:sales?(sales.finalized?"g":"w"):""},
+    {id:"reports",icon:"📄",label:"Reportes",
+      on:cur==="reports"||cur==="reportPreview",
+      dot:t.status==="closed"?"g":""},
+  ];
+  bar.innerHTML=tabs.map(tab=>`<button class="tab${tab.on?" on":""}" data-tab="${tab.id}">
+    <span class="tab__icon">${tab.icon}</span>
+    <span class="tab__label">${tab.label}</span>
+    <span class="tab__dot ${tab.dot}"></span>
+  </button>`).join("");
+}
+
+/* ════════════════════════════════════════════════════════════
+   TOPBAR
+════════════════════════════════════════════════════════════ */
+function updateTopbar(){
+  const t=activeTurn(), sub=$('#topbarSub');
+  if(!t){ sub.textContent="Hoy: "+dateKeyFrom(new Date()); return; }
+  const now=new Date();
+  sub.textContent=`${t.branch} · ${t.slotLabel} · ${t.managerName} · ${t.status==="closed"?"CERRADO":"ABIERTO"} · ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+}
+setInterval(updateTopbar,10000);
+
+/* ════════════════════════════════════════════════════════════
+   RENDER DISPATCH
+════════════════════════════════════════════════════════════ */
+function render(){
+  closeSheet();
+  updateTopbar();
+  updateTabBar();
+  const {name:r, params:p} = rt.route;
+  if(r==="home")       return renderHome();
+  if(r==="operation")  return renderOperation();
+  if(r==="purchases")  return renderPurchases();
+  if(r==="receiptEdit")return renderReceiptEdit(p.id);
+  if(r==="inventory")  return renderInventory(p);
+  if(r==="sales")      return renderSales();
+  if(r==="reports")    return renderReports();
+  if(r==="reportPreview") return renderReportPreview();
+  if(r==="catalog")    return renderCatalog();
+  setRoute("home");
+}
+
+/* ════════════════════════════════════════════════════════════
+   HOME
+════════════════════════════════════════════════════════════ */
+function renderHome(){
+  const dk=dateKeyFrom(new Date());
+  const t1=getTurn(dk,1), t2=getTurn(dk,2);
+  const openRef=findOpenTurnToday();
+  const stLabel=t=>!t?"Disponible":t.status==="open"?"Abierto":"Cerrado";
+  const stCls=t=>!t?"avail":t.status==="open"?"open":"closed";
+  const t2Blocked=t1&&t1.status==="open"?"T1 aún abierto":(!t1?"Inicia T1 primero":null);
+  $('#app').innerHTML=`
+    <div class="card" style="text-align:center;padding:28px 16px;">
+      <div style="font-size:40px;margin-bottom:10px;">📋</div>
+      <div style="font-weight:800;font-size:22px;">Bitácora Operativa</div>
+      <div class="small" style="margin-top:4px;">${dk} — Tienda de conveniencia</div>
+    </div>
+    <div class="shiftGrid">
+      <div class="shiftBox">
+        <div class="shiftBox__no">☀️ T1</div>
+        <div class="shiftBox__time">${SHIFT_TIMES[1]}</div>
+        <div class="shiftBox__st ${stCls(t1)}">${stLabel(t1)}</div>
+        ${t1?`<div class="small" style="margin-top:8px;">${escapeHtml(t1.managerName)}<br>${escapeHtml(t1.branch)}</div>`:""}
+      </div>
+      <div class="shiftBox">
+        <div class="shiftBox__no">🌙 T2</div>
+        <div class="shiftBox__time">${SHIFT_TIMES[2]}</div>
+        <div class="shiftBox__st ${stCls(t2)}">${stLabel(t2)}</div>
+        ${t2?`<div class="small" style="margin-top:8px;">${escapeHtml(t2.managerName)}<br>${escapeHtml(t2.branch)}</div>`:""}
+      </div>
+    </div>
+    ${openRef?`<div class="card" style="border-color:rgba(245,158,11,.4);">
+      <div class="kpi"><span class="badge w">● Turno abierto</span></div>
+      <button class="btn primary" data-action="enterOpen">Entrar al turno →</button>
+    </div>`:""}
+    <div class="card">
+      <div style="font-weight:700;font-size:16px;margin-bottom:12px;">Iniciar turno</div>
+      ${!t1?`<button class="btn primary" data-action="startTurn" data-slot="1" style="margin-bottom:10px;">☀️ Abrir T1 — ${SHIFT_TIMES[1]}</button>`:
+        t1.status==="open"?`<button class="btn" data-action="enterTurn" data-slot="1" style="margin-bottom:10px;">Entrar a T1 (abierto)</button>`:
+        `<button class="btn" data-action="viewFinal" data-slot="1" style="margin-bottom:10px;">Ver reporte T1</button>`}
+      ${!t2&&t1&&t1.status==="closed"?`<button class="btn primary" data-action="startTurn" data-slot="2">🌙 Abrir T2 — ${SHIFT_TIMES[2]}</button>`:
+        t2&&t2.status==="open"?`<button class="btn" data-action="enterTurn" data-slot="2">Entrar a T2 (abierto)</button>`:
+        t2&&t2.status==="closed"?`<button class="btn" data-action="viewFinal" data-slot="2">Ver reporte T2</button>`:
+        `<button class="btn" disabled>🌙 T2 — ${t2Blocked||"no disponible"}</button>`}
+    </div>
+  `;
+  showFooter(`<button class="btn" data-action="go" data-to="catalog">📂 Base de datos — ${catalogStore.rows.length?catalogStore.rows.length+" SKUs":"Sin cargar"}</button>`);
+}
+
+/* ════════════════════════════════════════════════════════════
+   OPERATION (APERTURA / CIERRE)
+════════════════════════════════════════════════════════════ */
+function renderOperation(){
+  const t=activeTurn(); if(!t) return setRoute("home");
+  const locked=isLocked(), op=ensureOp(t);
+  const prog={done:op.items.filter(x=>x.done).length,total:op.items.length};
+  prog.pct=Math.round(prog.done/prog.total*100);
+  const need=new Set(op.evidenceIds||[]);
+  const checkHtml=op.items.map(it=>{
+    const req=need.has(it.id), photos=it.photos||[];
+    const vk=photos.length?storeVP(photos):"";
+    return `<div class="checkItem ${it.done?"done":""}" data-action="toggleCheck" data-id="${it.id}">
+      <div class="checkBox">${it.done?"✓":""}</div>
+      <div class="checkItem__body">
+        <div class="checkItem__label">${escapeHtml(it.label)}</div>
+        <div class="checkItem__meta">
+          ${it.done?`<span class="pill g">✓ ${fmtTime(it.doneAt)}</span>`:`<span class="pill">Pendiente</span>`}
+          ${req?`<span class="pill ${photos.length?"g":"r"}" style="margin-left:4px;">📷 ${photos.length?"Foto OK":"Requerida"}</span>`:""}
+        </div>
+        ${req?`<div style="margin-top:10px;" onclick="event.stopPropagation()">
+          ${photos.map((p,i)=>`<div class="photoCard" style="margin-bottom:8px;">
+            <img class="photoCard__img" src="${photoSrc(p)}" loading="lazy"
+              data-action="viewPhoto" data-vk="${vk}" data-idx="${i}" style="cursor:pointer;max-height:180px;"/>
+            <div class="photoCard__bar">
+              <span class="photoCard__time">${fmtTime(p.ts)}</span>
+              ${!locked?`<button class="btn sm danger" data-action="opDelPhoto" data-id="${it.id}" data-idx="${i}">Eliminar</button>`:""}
+            </div>
+          </div>`).join("")}
+          ${!locked&&photos.length<LIMITS.opPhoto?`<button class="photoAdd" data-action="opAddPhoto" data-id="${it.id}">
+            <span class="photoAdd__icon">📷</span><span>${photos.length?"Cambiar foto":"Agregar foto obligatoria"}</span>
+          </button>`:""}
+        </div>`:``}
+        <div style="margin-top:8px;" onclick="event.stopPropagation()">
+          <input class="input" style="font-size:14px;min-height:42px;" value="${escapeHtml(it.note||"")}"
+            data-action="opNote" data-id="${it.id}" placeholder="Nota opcional…" ${locked?"disabled":""}/>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+  $('#app').innerHTML=`
+    <div class="card">
+      <h2>${t.slot===2?"Cierre / Operación":"Apertura / Operación"}</h2>
+      <div class="kpi">
+        <span class="badge ${prog.pct===100?"g":"w"}">${prog.done}/${prog.total} completados</span>
+        ${op.finalized?`<span class="badge g">✅ Finalizado</span>`:`<span class="badge w">En proceso</span>`}
+      </div>
+      <div class="progWrap"><div class="progBar"><div class="progFill" style="width:${prog.pct}%"></div></div></div>
+      <div class="small" style="margin-top:8px;">Inicio: ${fmtTime(op.startAt)}
+        ${op.endAt?" · Fin: "+fmtTime(op.endAt):" · En proceso"}</div>
+      <div class="small" style="color:var(--amber);margin-top:4px;">📷 5 puntos aleatorios requieren foto como evidencia.</div>
+    </div>
+    <div class="card">${checkHtml}</div>
+  `;
+  showFooter(!locked?`
+    <button class="btn" data-action="opSave" style="flex:0 0 auto;width:auto;padding:0 20px;">💾 Guardar</button>
+    <button class="btn ${prog.pct===100?"good":"primary"}" data-action="opFinalize">${t.slot===2?"Finalizar Cierre":"Finalizar Apertura"}</button>
+  `:`<button class="btn" disabled>${t.slot===2?"Cierre cerrado":"Apertura cerrada"}</button>`);
+}
+
+/* ════════════════════════════════════════════════════════════
+   PURCHASES
+════════════════════════════════════════════════════════════ */
+function renderPurchases(){
+  const t=activeTurn(); if(!t) return setRoute("home");
+  const locked=isLocked(), pur=ensurePurchases(t);
+  const recHtml=(pur.receipts||[]).map(r=>`
+    <div class="card" style="margin-bottom:10px;">
+      <div class="listItem__top">
+        <div>
+          <div class="listItem__title">${escapeHtml(r.supplier||"(sin proveedor)")}</div>
+          <div class="small">${escapeHtml(r.invoiceNo||"Sin número")} — ${fmtMoney(r.amount)}</div>
+          <div class="small">${fmtTime(r.startAt)}</div>
+        </div>
+        ${r.finalized?`<span class="pill g">✓ Lista</span>`:`<span class="pill w">Proceso</span>`}
+      </div>
+      <div class="kpi" style="margin-top:8px;">
+        <span class="pill ${r.photos?.length?"g":"r"}">📷 ${r.photos?.length||0} foto(s)</span>
+        ${r.incidences?.length?`<span class="pill w">${r.incidences.length} incid.</span>`:""}
+        ${r.newProducts?.length?`<span class="pill" style="border-color:rgba(168,85,247,.4);color:#c4b5fd;">${r.newProducts.length} nuevo(s)</span>`:""}
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn" data-action="openReceipt" data-id="${r.id}">✏️ Abrir</button>
+        <button class="btn" data-action="sendReceipt" data-id="${r.id}">📤 Enviar</button>
+      </div>
+    </div>`).join("")||`<p class="small muted" style="padding:16px 0;">Sin facturas registradas.</p>`;
+  $('#app').innerHTML=`
+    <div class="card">
+      <h2>Compras / Facturas</h2>
+      <div class="kpi">
+        <span class="badge">${(pur.receipts||[]).length} total</span>
+        <span class="badge ${(pur.receipts||[]).filter(r=>r.finalized).length===(pur.receipts||[]).length&&(pur.receipts||[]).length?"g":"w"}">${(pur.receipts||[]).filter(r=>r.finalized).length} finalizadas</span>
+      </div>
+      ${!locked?`<button class="btn primary" data-action="addReceipt" style="margin-top:8px;">+ Nueva factura</button>`:""}
+    </div>
+    ${recHtml}
+  `;
+  showFooter("");
+}
+
+function renderReceiptEdit(id){
+  const t=activeTurn(); if(!t) return setRoute("home");
+  const locked=isLocked(), r=findReceipt(t,id);
+  if(!r){ toast("Factura no encontrada."); return setRoute("purchases"); }
+
+  const incHtml=(r.incidences||[]).map((x,i)=>{
+    const vk=x.incPhoto?storeVP([x.incPhoto]):"";
+    return `<div style="border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:12px;margin-bottom:10px;">
+      <div class="listItem__top">
+        <div class="listItem__title">Incidencia ${i+1}</div>
+        ${!locked?`<button class="btn sm danger" data-action="delInc" data-id="${r.id}" data-inc="${x.id}">Eliminar</button>`:""}
+      </div>
+      <div class="label">Producto / Descripción</div>
+      <input class="input" value="${escapeHtml(x.desc||"")}" data-action="incDesc" data-id="${r.id}" data-inc="${x.id}" ${locked?"disabled":""}/>
+      <div class="label">Cantidad faltante</div>
+      <input class="input" inputmode="numeric" value="${escapeHtml(x.qty||"")}" data-action="incQty" data-id="${r.id}" data-inc="${x.id}" ${locked?"disabled":""}/>
+      <div class="label">Motivo</div>
+      <input class="input" value="${escapeHtml(x.reason||"")}" placeholder="No surtido / Daño / Otro" data-action="incReason" data-id="${r.id}" data-inc="${x.id}" ${locked?"disabled":""}/>
+      <div class="label">📷 Evidencia (factura anotada con proveedor)</div>
+      ${x.incPhoto?`<div class="photoCard">
+        <img class="photoCard__img" src="${photoSrc(x.incPhoto)}" loading="lazy" style="max-height:200px;cursor:pointer;"
+          data-action="viewPhoto" data-vk="${vk}" data-idx="0"/>
+        <div class="photoCard__bar">
+          <span class="photoCard__time">${fmtTime(x.incPhoto.ts)}</span>
+          ${!locked?`<button class="btn sm danger" data-action="delIncPhoto" data-id="${r.id}" data-inc="${x.id}">Quitar</button>`:""}
+        </div>
+      </div>`:(!locked?`<button class="photoAdd" data-action="addIncPhoto" data-id="${r.id}" data-inc="${x.id}">
+        <span class="photoAdd__icon">📷</span><span>Foto de factura con faltante</span>
+      </button>`:`<p class="small muted">Sin evidencia.</p>`)}
+    </div>`;
+  }).join("")||`<p class="small muted">Sin incidencias.</p>`;
+
+  const npHtml=(r.newProducts||[]).map((np,i)=>{
+    const vkF=np.photoFront?storeVP([np.photoFront]):"";
+    const vkB=np.photoBarcode?storeVP([np.photoBarcode]):"";
+    return `<div style="border:1px solid rgba(168,85,247,.25);border-radius:12px;padding:12px;margin-bottom:10px;">
+      <div class="listItem__top">
+        <div class="listItem__title">Producto nuevo ${i+1}</div>
+        ${!locked?`<button class="btn sm danger" data-action="delNP" data-id="${r.id}" data-np="${np.id}">Eliminar</button>`:""}
+      </div>
+      <div class="label">Nombre *</div>
+      <input class="input" value="${escapeHtml(np.name||"")}" data-action="npName" data-id="${r.id}" data-np="${np.id}" ${locked?"disabled":""}/>
+      <div class="label">Cantidad *</div>
+      <input class="input" inputmode="numeric" value="${escapeHtml(np.qty||"")}" data-action="npQty" data-id="${r.id}" data-np="${np.id}" ${locked?"disabled":""}/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+        <div>
+          <div class="label" style="margin-top:0;">Foto frente</div>
+          ${np.photoFront?`<div class="photoCard">
+            <img class="photoCard__img" src="${photoSrc(np.photoFront)}" style="max-height:120px;cursor:pointer;" data-action="viewPhoto" data-vk="${vkF}" data-idx="0"/>
+            ${!locked?`<div class="photoCard__bar"><button class="btn sm danger" data-action="delNPFront" data-id="${r.id}" data-np="${np.id}">Quitar</button></div>`:""}
+          </div>`:(!locked?`<button class="photoAdd" data-action="addNPFront" data-id="${r.id}" data-np="${np.id}" style="min-height:60px;">
+            <span class="photoAdd__icon">📷</span><span style="font-size:12px;">Frente</span>
+          </button>`:`<p class="small muted">Sin foto</p>`)}
+        </div>
+        <div>
+          <div class="label" style="margin-top:0;">Código de barras</div>
+          ${np.photoBarcode?`<div class="photoCard">
+            <img class="photoCard__img" src="${photoSrc(np.photoBarcode)}" style="max-height:120px;cursor:pointer;" data-action="viewPhoto" data-vk="${vkB}" data-idx="0"/>
+            ${!locked?`<div class="photoCard__bar"><button class="btn sm danger" data-action="delNPBarcode" data-id="${r.id}" data-np="${np.id}">Quitar</button></div>`:""}
+          </div>`:(!locked?`<button class="photoAdd" data-action="addNPBarcode" data-id="${r.id}" data-np="${np.id}" style="min-height:60px;">
+            <span class="photoAdd__icon">📷</span><span style="font-size:12px;">Código</span>
+          </button>`:`<p class="small muted">Sin foto</p>`)}
+        </div>
+      </div>
+    </div>`;
+  }).join("")||`<p class="small muted">Sin productos nuevos.</p>`;
+
+  const invPhotos=renderPhotoCards(r.photos||[],{limit:LIMITS.receiptPhotos,addAction:"addInvPhoto",addData:`data-id="${r.id}"`,locked,addLabel:"Agregar foto de factura",delAction:"delInvPhoto",delData:`data-id="${r.id}"`});
+  const evidPhotos=renderPhotoCards(r.incEvidencePhotos||[],{limit:LIMITS.receiptEvidPhotos,addAction:"addEvidPhoto",addData:`data-id="${r.id}"`,locked,addLabel:"Agregar evidencia",delAction:"delEvidPhoto",delData:`data-id="${r.id}"`});
+
+  $('#app').innerHTML=`
+    <div class="card">
+      <div class="kpi">
+        ${r.finalized?`<span class="badge g">✅ Finalizada</span>`:`<span class="badge w">En proceso</span>`}
+        <span class="badge">${fmtTime(r.startAt)}</span>
+      </div>
+      <div class="label">Proveedor *</div>
+      <input class="input" value="${escapeHtml(r.supplier||"")}" data-action="rcptSupplier" data-id="${r.id}" placeholder="Nombre del proveedor" ${locked?"disabled":""}/>
+      <div class="label">Número de factura</div>
+      <input class="input" value="${escapeHtml(r.invoiceNo||"")}" data-action="rcptInvoiceNo" data-id="${r.id}" placeholder="F-12345 (opcional)" ${locked?"disabled":""}/>
+      <div class="label">Monto total *</div>
+      <input class="input" inputmode="decimal" value="${escapeHtml(r.amount||"")}" data-action="rcptAmount" data-id="${r.id}" placeholder="1234.56" ${locked?"disabled":""}/>
+    </div>
+    <div class="card">
+      <h3>📷 Fotos de la factura *</h3>
+      <p class="small" style="margin-bottom:10px;">Al menos 1 foto obligatoria.</p>
+      ${invPhotos}
+    </div>
+    <div class="card">
+      <h3>Incidencias (faltantes)</h3>
+      ${incHtml}
+      ${!locked?`<button class="btn" data-action="addInc" data-id="${r.id}" style="margin-top:8px;">+ Agregar incidencia</button>`:""}
+    </div>
+    ${r.incidences?.length?`<div class="card">
+      <h3>📷 Evidencia de incidencias</h3>
+      <p class="small" style="margin-bottom:10px;">Talón / acta de incidencias.</p>
+      ${evidPhotos}
+    </div>`:""}
+    <div class="card" style="border-color:rgba(168,85,247,.25);">
+      <h3>🔍 Productos no en catálogo</h3>
+      <p class="small" style="margin-bottom:10px;">Artículos nuevos — se notifica a gerencia.</p>
+      ${npHtml}
+      ${!locked?`<button class="btn" data-action="addNP" data-id="${r.id}" style="margin-top:8px;">+ Agregar producto nuevo</button>`:""}
+    </div>
+  `;
+  showFooter(`<button class="btn ${locked?"":"good"}" data-action="finalizeReceipt" data-id="${r.id}" ${locked?"disabled":""}>Finalizar y Enviar</button>`);
+}
+
+/* ════════════════════════════════════════════════════════════
+   INVENTORY
+════════════════════════════════════════════════════════════ */
+function renderInventory(params={}){
+  const t=activeTurn(); if(!t) return setRoute("home");
+  const locked=isLocked(), inv=ensureInventory(t);
+  const rows=catalogStore.rows;
+  const hasCat=rows.length>0;
+  const filter=params.filter||"all";
+
+  if(!hasCat){
+    $('#app').innerHTML=`<div class="card" style="text-align:center;padding:40px 16px;">
+      <div style="font-size:48px;margin-bottom:16px;">📊</div>
+      <h2 style="margin-bottom:8px;">Sin catálogo</h2>
+      <p class="small" style="margin-bottom:20px;">Carga el catálogo de SKUs para hacer inventario.</p>
+      <button class="btn primary" data-action="go" data-to="catalog">📂 Ir a Base de datos →</button>
+    </div>`;
+    showFooter(""); return;
+  }
+
+  const todays=inventorySlice(rows,t.dateKey,t.slot);
+  const si=inventorySliceInfo(rows,t.dateKey);
+  const prog=invProgress(inv,todays);
+  const canClose=prog.total>0&&prog.done===prog.total&&!inv.finalized&&!locked;
+
+  const countPending=todays.filter(s=>{ const l=inv.lines[String(s.id)]; return !invLineDone(l); }).length;
+  const countDone=prog.done;
+  const countDiff=todays.filter(s=>{ const l=inv.lines[String(s.id)]; return invLineDone(l)&&Number(l.physical)!==Number(l.pos); }).length;
+
+  const filtered=filter==="pending"?todays.filter(s=>!invLineDone(inv.lines[String(s.id)])):
+    filter==="done"?todays.filter(s=>invLineDone(inv.lines[String(s.id)])):
+    filter==="diff"?todays.filter(s=>{ const l=inv.lines[String(s.id)]; return invLineDone(l)&&Number(l.physical)!==Number(l.pos); }):
+    todays;
+
+  const skuHtml=filtered.map(s=>{
+    const l=inv.lines[String(s.id)];
+    const done=invLineDone(l);
+    const hasDiff=done&&Number(l.physical)!==Number(l.pos);
+    const diff=done?Number(l.physical)-Number(l.pos):null;
+    return `<div class="invRow ${done?(hasDiff?"diff":"done"):""}" data-action="editSku" data-sku="${escapeHtml(s.id)}">
+      <div class="invRow__check">${done?"✓":""}</div>
+      <div class="invRow__body">
+        <div class="invRow__name">${escapeHtml(s.name)}</div>
+        <div class="invRow__id">${escapeHtml(s.id)}</div>
+        ${done?`<div class="invRow__counts">
+          <div class="invCount"><div class="invCount__val">${l.pos}</div><div class="invCount__lbl">POS</div></div>
+          <div class="invCount"><div class="invCount__val">${l.physical}</div><div class="invCount__lbl">Físico</div></div>
+          ${hasDiff?`<div class="invCount"><div class="invCount__val" style="color:${diff>0?"var(--green)":"var(--red)"};">${diff>0?"+":""}${diff}</div><div class="invCount__lbl">Dif.</div></div>`:""}
+        </div>`:""}
+      </div>
+    </div>`;
+  }).join("")||`<p class="small muted" style="padding:16px 0;">Sin artículos en este filtro.</p>`;
+
+  const wasteHtml=(inv.waste||[]).map(w=>{
+    const vk=w.photos?.length?storeVP(w.photos):"";
+    return `<div class="listItem">
+      <div class="listItem__top" data-action="editWaste" data-id="${w.id}" style="cursor:pointer;">
+        <div>
+          <div class="listItem__title">${escapeHtml(resolveSkuName(w.skuId,w.skuName))}</div>
+          <div class="small">${escapeHtml(w.skuId)} · Cant: ${escapeHtml(w.qty)} · ${escapeHtml(w.reason||"")} · ${fmtTime(w.createdAt)}</div>
+        </div>
+        <span class="pill ${w.photos?.length?"g":"w"}">📷 ${w.photos?.length||0}</span>
+      </div>
+      ${w.photos?.length?`<img src="${photoSrc(w.photos[0])}" loading="lazy" style="width:100%;max-height:160px;object-fit:contain;border-radius:8px;margin-top:8px;cursor:pointer;background:#000;" data-action="viewPhoto" data-vk="${vk}" data-idx="0"/>`:``}
+    </div>`;
+  }).join("")||`<p class="small muted">Sin mermas registradas.</p>`;
+
+  $('#app').innerHTML=`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <h2 style="margin:0 0 2px;">Inventario</h2>
+          <div class="small">${t.slot===2?"🌙 Turno Cierre":"☀️ Turno Apertura"} · Día ${si.dayOfMonth}/${si.totalDays}
+            ${inv.finalized?` · <span style="color:var(--green);">✅ Cerrado</span>`:""}
+          </div>
+        </div>
+        ${inv.finalized?`<span class="badge g">✅</span>`:`<span class="badge w">● Proceso</span>`}
+      </div>
+      <div class="invStats">
+        <div class="invStat"><div class="invStat__val" style="color:var(--green);">${countDone}</div><div class="invStat__lbl">Validados</div></div>
+        <div class="invStat"><div class="invStat__val" style="color:var(--amber);">${countPending}</div><div class="invStat__lbl">Pendientes</div></div>
+        <div class="invStat"><div class="invStat__val" style="color:${countDiff?"var(--red)":"var(--muted)"};">${countDiff}</div><div class="invStat__lbl">Con dif.</div></div>
+      </div>
+      <div class="progWrap"><div class="progBar"><div class="progFill" style="width:${prog.pct}%;"></div></div></div>
+      <div class="small" style="text-align:right;margin-bottom:10px;">${prog.pct}%</div>
+      <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.8;">
+        <div><strong>Catálogo:</strong> ${escapeHtml(catalogStore.source||"importado")} — ${rows.length} SKUs</div>
+        <div><strong>Hoy:</strong> artículos ${si.dayStart+1}–${si.dayEnd} · Mes cubierto: ${Math.round(si.dayEnd/si.totalSkus*100)}%</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <h2 style="margin:0;">Artículos del turno</h2>
+        ${!locked&&countPending>0?`<button class="btn sm" data-action="invPending">→ Pendiente (${countPending})</button>`:""}
+      </div>
+      <div class="filterTabs">
+        <button class="fTab ${filter==="all"?"on":""}" data-action="invFilter" data-filter="all">Todos (${todays.length})</button>
+        <button class="fTab ${filter==="pending"?"on":""}" data-action="invFilter" data-filter="pending">Pendiente (${countPending})</button>
+        <button class="fTab ${filter==="done"?"on":""}" data-action="invFilter" data-filter="done">OK (${countDone})</button>
+        <button class="fTab ${filter==="diff"?"on":""}" data-action="invFilter" data-filter="diff">Dif. (${countDiff})</button>
+      </div>
+      ${skuHtml}
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h2 style="margin:0;">Mermas <span class="pill w" style="margin-left:6px;">${(inv.waste||[]).length}</span></h2>
+        ${!locked?`<button class="btn sm" data-action="addWaste">+ Merma</button>`:""}
+      </div>
+      ${wasteHtml}
+    </div>
+  `;
+  showFooter(`
+    <button class="btn" data-action="invSend" style="flex:0 0 auto;width:auto;padding:0 18px;">📤 Enviar</button>
+    <button class="btn ${canClose?"good":""}" data-action="invClose" ${canClose?"":"disabled"}>Cerrar inventario</button>
+  `);
+}
+
+/* ════════════════════════════════════════════════════════════
+   SALES / CORTE
+════════════════════════════════════════════════════════════ */
+function renderSales(){
+  const t=activeTurn(); if(!t) return setRoute("home");
+  const locked=isLocked(), s=ensureSales(t);
+  const calc=salesCalc(s);
+
+  const wHtml=(s.withdrawals||[]).map((w,i)=>{
+    const vk=w.photos?.length?storeVP(w.photos):"";
+    return `<div class="listItem">
+      <div class="listItem__top">
+        <div>
+          <div class="listItem__title">Retiro ${i+1} — ${fmtMoney(w.amount)}</div>
+          <div class="small">${escapeHtml(w.cashier||"")} · ${fmtTime(w.ts)}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          ${w.validated?`<span class="pill g">✓ Validado</span>`:`<span class="pill w">Pendiente</span>`}
+          ${!locked?`<button class="btn sm danger" data-action="delWithdrawal" data-id="${w.id}">Eliminar</button>`:""}
+        </div>
+      </div>
+      ${w.photos?.length?`<img src="${photoSrc(w.photos[0])}" loading="lazy" style="width:100%;max-height:140px;object-fit:contain;border-radius:8px;margin-top:8px;cursor:pointer;background:#000;" data-action="viewPhoto" data-vk="${vk}" data-idx="0"/>`:``}
+      ${!locked?`<label style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px;background:rgba(34,197,94,.07);border-radius:10px;cursor:pointer;">
+        <input type="checkbox" data-action="validateW" data-id="${w.id}" ${w.validated?"checked":""} style="width:22px;height:22px;accent-color:var(--green);cursor:pointer;"/>
+        <span style="font-size:14px;font-weight:600;">Validar retiro (encargada)</span>
+      </label>`:``}
+    </div>`;
+  }).join("")||`<p class="small muted">Sin retiros registrados.</p>`;
+
+  const incHtml=(s.incidences||[]).map((x,i)=>`
+    <div class="listItem">
+      <div class="listItem__top">
+        <div>
+          <div class="listItem__title">${x.skuId?escapeHtml(x.skuId)+" — ":""}${escapeHtml(resolveSkuName(x.skuId,x.skuName))}</div>
+          <div class="small">${x.reason?escapeHtml(x.reason)+" · ":""}Cant: ${x.qty||"–"} · ${fmtMoney(x.amount)}</div>
+        </div>
+        ${!locked?`<div style="display:flex;gap:6px;">
+          <button class="btn sm" data-action="editInc" data-id="${x.id}">✏️</button>
+          <button class="btn sm danger" data-action="delInc2" data-id="${x.id}">×</button>
+        </div>`:""}
+      </div>
+    </div>`).join("")||`<p class="small muted">Sin devoluciones.</p>`;
+
+  const salesPhotos=renderPhotoCards(s.photos||[],{limit:LIMITS.salesPhotos,addAction:"addSalesPhoto",locked,addLabel:"Foto del corte",delAction:"delSalesPhoto"});
+
+  $('#app').innerHTML=`
+    <div class="card">
+      <h2>💳 Ventas / Corte de caja</h2>
+      <div class="kpi">
+        ${s.finalized?`<span class="badge g">✅ Finalizado</span>`:
+          s.corteStarted?`<span class="badge w">● Corte en proceso</span>`:
+          `<span class="badge">○ Pendiente</span>`}
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h2 style="margin:0;">Retiros de efectivo</h2>
+        ${!locked?`<button class="btn sm" data-action="addWithdrawal">+ Retiro</button>`:""}
+      </div>
+      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px;">
+        <strong style="color:#fde68a;">Total retiros validados: ${fmtMoney(calc.totalRetiros)}</strong>
+      </div>
+      ${wHtml}
+    </div>
+    ${s.corteStarted?`
+      <div class="card" style="border-color:rgba(59,130,246,.35);">
+        <h2>💰 Datos del corte</h2>
+        <div class="small" style="color:#93c5fd;margin-bottom:10px;">Corte iniciado: ${fmtTime(s.startAt)}</div>
+        <div class="label">Cajer@ *</div>
+        <input class="input" value="${escapeHtml(s.cashier||"")}" data-action="salesCashier" placeholder="Nombre cajer@" ${locked?"disabled":""}/>
+        <div class="label">Ventas totales *</div>
+        <input class="input" inputmode="decimal" value="${escapeHtml(s.total||"")}" data-action="salesTotal" placeholder="Ej. 25000" ${locked?"disabled":""}/>
+        <div class="label">Ventas con tarjeta *</div>
+        <input class="input" inputmode="decimal" value="${escapeHtml(s.card||"")}" data-action="salesCard" placeholder="Ej. 3500" ${locked?"disabled":""}/>
+        <div style="background:rgba(0,0,0,.2);border-radius:12px;padding:14px;margin:14px 0;">
+          <div class="small" style="font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Resumen de caja</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="statBox"><div class="statBox__val">${fmtMoney(calc.total)}</div><div class="statBox__lbl">Total ventas</div></div>
+            <div class="statBox"><div class="statBox__val">${fmtMoney(calc.card)}</div><div class="statBox__lbl">Tarjeta</div></div>
+            <div class="statBox"><div class="statBox__val" style="color:var(--amber);">${fmtMoney(calc.totalRetiros)}</div><div class="statBox__lbl">Retiros</div></div>
+            <div class="statBox"><div class="statBox__val" style="color:#a78bfa;">${fmtMoney(calc.totalDev)}</div><div class="statBox__lbl">Devoluciones</div></div>
+          </div>
+          <div style="margin-top:10px;padding:12px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:10px;">
+            <div class="small" style="margin-bottom:4px;">Efectivo esperado en caja</div>
+            <div style="font-size:28px;font-weight:800;color:var(--green);">${fmtMoney(calc.efectivoEnCaja)}</div>
+          </div>
+        </div>
+        <div class="label">Notas</div>
+        <textarea class="textarea" data-action="salesNotes" ${locked?"disabled":""}>${escapeHtml(s.notes||"")}</textarea>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <h2 style="margin:0;">Devoluciones</h2>
+          ${!locked?`<button class="btn sm" data-action="addInc2">+ Devolución</button>`:""}
+        </div>
+        ${incHtml}
+      </div>
+      <div class="card">
+        <h2>📷 Evidencia del corte *</h2>
+        <p class="small" style="margin-bottom:10px;">Foto del billetero al momento del corte.</p>
+        ${salesPhotos}
+      </div>
+    `:`${!locked?`<div class="card" style="border-color:rgba(59,130,246,.3);">
+        <h2>🔔 Iniciar corte</h2>
+        <p class="small">Registra los retiros primero. Al iniciar el corte se registra la hora y se habilita el formulario.</p>
+        <button class="btn good" data-action="startCorte" style="margin-top:10px;">Iniciar corte de caja</button>
+      </div>`:""}`}
+  `;
+  const footerHtml=s.corteStarted
+    ?`<button class="btn" data-action="salesSend" style="flex:0 0 auto;width:auto;padding:0 18px;">Enviar</button>
+       <button class="btn ${locked?"":"good"}" data-action="finalizeSales" ${locked?"disabled":""}>Finalizar</button>`
+    :`<button class="btn" disabled>Enviar</button>
+       <button class="btn" data-action="startCorte" ${locked?"disabled":""}>Iniciar corte</button>`;
+  showFooter(footerHtml);
+}
+
+/* ════════════════════════════════════════════════════════════
+   REPORTS
+════════════════════════════════════════════════════════════ */
+function renderReports(){
+  const t=activeTurn(); if(!t) return setRoute("home");
+  const locked=t.status==="closed";
+  const op=t.modules.operation, pur=ensurePurchases(t), inv=t.modules.inventory, sales=t.modules.sales;
+  const recs=pur.receipts||[];
+  $('#app').innerHTML=`
+    <div class="card">
+      <h2>Reportes del turno</h2>
+      <div class="kpi">${locked?`<span class="badge g">🔒 Cerrado</span>`:`<span class="badge w">● Abierto</span>`}</div>
+    </div>
+    <div class="card">
+      <h3>${t.slot===2?"Cierre":"Apertura"} / Operación</h3>
+      <button class="btn" data-action="previewOp" ${op&&op.finalized?"":"disabled"}>Ver reporte</button>
+      ${op&&!op.finalized?`<p class="small" style="margin-top:6px;">Finaliza para generar.</p>`:""}
+    </div>
+    <div class="card">
+      <h3>Compras (${recs.length} factura${recs.length!==1?"s":""})</h3>
+      ${recs.map(r=>`<div class="row" style="margin-bottom:8px;">
+        <button class="btn sm" data-action="previewReceipt" data-id="${r.id}">Ver: ${escapeHtml(r.supplier||"Factura")}</button>
+        <button class="btn sm" data-action="sendReceipt" data-id="${r.id}">Enviar</button>
+      </div>`).join("")||`<p class="small muted">Sin facturas.</p>`}
+    </div>
+    <div class="card">
+      <h3>Inventario</h3>
+      <div class="row">
+        <button class="btn" data-action="previewInv" ${inv?"":"disabled"}>Ver</button>
+        <button class="btn" data-action="invSend" ${inv?"":"disabled"}>Enviar</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Ventas / Corte</h3>
+      <div class="row">
+        <button class="btn" data-action="previewSales" ${sales?"":"disabled"}>Ver</button>
+        <button class="btn" data-action="salesSend" ${sales?"":"disabled"}>Enviar</button>
+      </div>
+    </div>
+    <div class="card" style="border-color:rgba(245,158,11,.35);">
+      <h3>Reporte Final del Turno</h3>
+      ${locked?`<button class="btn" data-action="previewFinal">Ver reporte final</button>`:
+        `<button class="btn good" data-action="closeTurnAndSend">Cerrar turno y enviar</button>
+         <p class="small" style="margin-top:8px;">No podrás editar después.</p>
+         <div class="hr"></div>
+         <button class="btn" data-action="previewFinal">Vista previa (sin cerrar)</button>`}
+    </div>
+  `;
+  showFooter("");
+}
+
+function renderReportPreview(){
+  const t=activeTurn(); if(!rt.report) return setRoute("reports");
+  $('#app').innerHTML=`
+    <div class="card">
+      <h2>${escapeHtml(rt.report.title)}</h2>
+      <p class="small">Toca "Imprimir" para PDF.</p>
+    </div>
+    <div class="reportWrap"><iframe class="reportFrame" id="reportFrame"></iframe></div>
+  `;
+  $('#reportFrame').srcdoc=rt.report.html;
+  showFooter(`
+    <button class="btn" data-action="sendReport" style="flex:0 0 auto;padding:0 16px;">📤 Enviar</button>
+    <button class="btn" data-action="downloadReport" style="flex:0 0 auto;padding:0 16px;">⬇ Guardar</button>
+    <button class="btn" data-action="printReport">🖨 Imprimir</button>
+  `);
+}
+
+/* ════════════════════════════════════════════════════════════
+   CATALOG
+════════════════════════════════════════════════════════════ */
+function renderCatalog(){
+  const has=catalogStore.rows.length>0;
+  $('#app').innerHTML=`
+    <div class="card">
+      <h2>📂 Base de datos (Catálogo)</h2>
+      ${has?`<div class="kpi"><span class="badge g">✓ ${catalogStore.rows.length} SKUs</span></div>
+        <p class="small">Fuente: ${escapeHtml(catalogStore.source||"CSV")} — ${catalogStore.importedAt?fmtTime(catalogStore.importedAt):"–"}</p>`:
+        `<p class="small" style="color:var(--amber);">⚠ No hay catálogo cargado.</p>`}
+      <div class="hr"></div>
+      <p class="small">CSV con columnas: <strong>ID</strong> y <strong>Artículo</strong> (o Nombre).</p>
+      <button class="btn primary" data-action="importCatalog" style="margin-top:10px;">📂 Importar CSV</button>
+      ${has?`<div class="hr"></div><button class="btn danger" data-action="clearCatalog">Eliminar catálogo</button>`:""}
+    </div>
+    ${has?`<div class="card">
+      <h3>Primeros artículos (${Math.min(catalogStore.rows.length,30)} de ${catalogStore.rows.length})</h3>
+      ${catalogStore.rows.slice(0,30).map(r=>`<div class="listItem">
+        <div class="small">${escapeHtml(r.id)} — ${escapeHtml(r.name)}</div>
+      </div>`).join("")}
+      ${catalogStore.rows.length>30?`<p class="small muted">...y ${catalogStore.rows.length-30} más</p>`:""}
+    </div>`:""}
+  `;
+  showFooter("");
+}
+
+/* ════════════════════════════════════════════════════════════
+   REPORT BUILDERS
+════════════════════════════════════════════════════════════ */
+function wrapReport(title, body){
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${title}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:#1f2937;padding:20px;background:#fff;}
+h1{font-size:20px;font-weight:800;margin-bottom:16px;color:#111827;}
+h2{font-size:16px;font-weight:700;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid #e5e7eb;color:#1f2937;}
+h3{font-size:14px;font-weight:700;margin:14px 0 8px;color:#374151;}
+p{margin:5px 0;line-height:1.6;}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px;}
+th{background:#f9fafb;text-align:left;padding:8px 10px;border:1px solid #e5e7eb;font-weight:700;}
+td{padding:7px 10px;border:1px solid #e5e7eb;}
+.meta{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:16px;}
+.box{border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin:10px 0;}
+.ok{color:#16a34a;font-weight:700;} .warn{color:#d97706;font-weight:700;} .err{color:#dc2626;font-weight:700;}
+img{max-width:100%;height:auto;border-radius:6px;margin:6px 0;display:block;}
+.photoCaption{font-size:12px;color:#6b7280;margin-bottom:10px;}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:#f3f4f6;border:1px solid #d1d5db;}
+.badge.ok{background:#dcfce7;border-color:#86efac;color:#166534;}
+.badge.warn{background:#fef3c7;border-color:#fde68a;color:#92400e;}
+.section-divider{border:none;border-top:2px solid #e5e7eb;margin:24px 0;}
+@media print{body{padding:10px;}img{max-width:300px;}}
+</style></head><body>${body}</body></html>`;
+}
+function metaBox(t,extra=""){
+  return `<div class="meta">
+    <p><strong>Turno:</strong> ${escapeHtml(t.slotLabel)} — ${escapeHtml(t.branch)}</p>
+    <p><strong>Encargado:</strong> ${escapeHtml(t.managerName)}</p>
+    <p><strong>Fecha:</strong> ${escapeHtml(t.dateKey)}</p>
+    <p><strong>Apertura:</strong> ${fmtTime(t.startedAt)}${t.closedAt?" · Cierre: "+fmtTime(t.closedAt):""}</p>
+    ${extra}
+  </div>`;
+}
+function photoFig(p,cap=""){
+  const src=photoSrc(p); if(!src) return "";
+  return `<img src="${src}" alt="${escapeHtml(cap)}"/><p class="photoCaption">${escapeHtml(cap)} · ${fmtTime(p.ts)}</p>`;
+}
+
+function buildOpReport(t){
+  const op=t.modules.operation; if(!op) return wrapReport("Apertura",`<h1>Sin datos.</h1>`);
+  const opLabel=t.slot===2?"Cierre/Operación":"Apertura/Operación";
+  const need=new Set(op.evidenceIds||[]);
+  const done=op.items.filter(x=>x.done), pending=op.items.filter(x=>!x.done);
+  const checkHtml=op.items.map(it=>{
+    const req=need.has(it.id), photos=it.photos||[];
+    return `<div class="box">
+      <p><span class="badge ${it.done?"ok":"warn"}">${it.done?"✓ OK":"Pendiente"}</span>
+         ${it.doneAt?` <span class="badge">🕐 ${fmtTime(it.doneAt)}</span>`:""}
+         ${req?` <span class="badge ${photos.length?"ok":"warn"}">📷 ${photos.length?"Foto OK":"Sin foto"}</span>`:""}</p>
+      <h3>${escapeHtml(it.label)}</h3>
+      ${it.note?`<p><strong>Nota:</strong> ${escapeHtml(it.note)}</p>`:""}
+      ${photos.map((p,i)=>photoFig(p,`${it.label} · foto ${i+1}`)).join("")}
+    </div>`;
+  }).join("");
+  return wrapReport(opLabel,`<h1>Reporte: ${opLabel}</h1>
+    ${metaBox(t,`<p><strong>Inicio:</strong> ${fmtTime(op.startAt)} · <strong>Fin:</strong> ${op.endAt?fmtTime(op.endAt):"(en proceso)"}</p>
+    <p><strong>Completados:</strong> ${done.length}/${op.items.length}</p>`)}
+    <h2>Checklist ${t.slot===2?"de cierre":"de apertura"}</h2>${checkHtml}`);
+}
+
+function buildReceiptReport(t,r){
+  const incHtml=r.incidences?.length?`<table><thead><tr><th>Producto</th><th>Cant.</th><th>Motivo</th><th>Evidencia</th></tr></thead><tbody>
+    ${r.incidences.map(x=>`<tr><td>${escapeHtml(x.desc||"")}</td><td>${escapeHtml(x.qty||"")}</td><td>${escapeHtml(x.reason||"")}</td>
+    <td>${x.incPhoto?`<img src="${photoSrc(x.incPhoto)}" style="width:100px;height:auto;"/>`:"-"}</td></tr>`).join("")}
+  </tbody></table>`:`<p>Sin incidencias.</p>`;
+  const npHtml=(r.newProducts||[]).length?`<h2 style="color:#7c3aed;">Productos no registrados en BD</h2>
+    <table><thead><tr><th>Nombre</th><th>Cant.</th><th>Frente</th><th>Código</th></tr></thead><tbody>
+    ${r.newProducts.map(np=>`<tr><td>${escapeHtml(np.name||"")}</td><td>${np.qty||""}</td>
+    <td>${np.photoFront?`<img src="${photoSrc(np.photoFront)}" style="width:80px;height:auto;"/>`:"-"}</td>
+    <td>${np.photoBarcode?`<img src="${photoSrc(np.photoBarcode)}" style="width:80px;height:auto;"/>`:"-"}</td></tr>`).join("")}
+  </tbody></table>`:"";
+  const evidHtml=(r.incEvidencePhotos||[]).map((p,i)=>photoFig(p,`Evidencia incidencia · foto ${i+1}`)).join("");
+  return wrapReport("Compras",`<h1>Factura: ${escapeHtml(r.supplier||"(sin proveedor)")}</h1>
+    ${metaBox(t,`<p><strong>Proveedor:</strong> ${escapeHtml(r.supplier||"–")}</p>
+    <p><strong>Factura:</strong> ${escapeHtml(r.invoiceNo||"(sin número)")}</p>
+    <p><strong>Monto:</strong> ${fmtMoney(r.amount)}</p>`)}
+    <h2>Fotos de factura</h2>
+    ${r.photos?.length?r.photos.map((p,i)=>photoFig(p,`Factura · foto ${i+1}`)).join(""):"<p>Sin fotos.</p>"}
+    <h2>Incidencias</h2>${incHtml}
+    ${evidHtml?`<h2>Evidencia de incidencias</h2>${evidHtml}`:""}
+    ${npHtml}`);
+}
+
+function buildInvReport(t){
+  const inv=t.modules.inventory; if(!inv) return wrapReport("Inventario",`<h1>Sin datos.</h1>`);
+  const rows=catalogStore.rows;
+  const todays=inventorySlice(rows,t.dateKey,t.slot);
+  const si=inventorySliceInfo(rows,t.dateKey);
+  const prog=invProgress(inv,todays);
+  const allLines=todays.map(s=>({s,l:inv.lines[String(s.id)]||{pos:null,physical:null,note:""}}));
+  const validated=allLines.filter(({l})=>invLineDone(l));
+  const pending=allLines.filter(({l})=>!invLineDone(l));
+  const diffs=validated.filter(({l})=>Number(l.physical)!==Number(l.pos))
+    .map(({s,l})=>({s,l,diff:Number(l.physical)-Number(l.pos)}))
+    .sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
+  const waste=inv.waste||[];
+  const diffTable=diffs.length?`<table><thead><tr><th>ID</th><th>Artículo</th><th>POS</th><th>Físico</th><th>Dif.</th><th>Acción</th></tr></thead><tbody>
+    ${diffs.map(({s,l,diff})=>`<tr><td>${escapeHtml(s.id)}</td><td>${escapeHtml(s.name)}</td>
+    <td>${l.pos}</td><td>${l.physical}</td>
+    <td class="${diff>0?"ok":"err"}">${diff>0?"+":""}${diff}</td>
+    <td>${diff>0?"Sobrante — revisar POS":"Faltante — ajustar/merma"}</td></tr>`).join("")}
+  </tbody></table>`:`<p class="ok">Sin diferencias. ✓</p>`;
+  const wasteHtml=waste.length?waste.map((w,i)=>{
+    const name=resolveSkuName(w.skuId,w.skuName);
+    return `<div class="box"><span class="badge warn">Merma ${i+1}</span>
+      <h3>${escapeHtml(w.skuId)} — ${escapeHtml(name)}</h3>
+      <p><strong>Cantidad:</strong> ${escapeHtml(w.qty)} · <strong>Motivo:</strong> ${escapeHtml(w.reason||"")}</p>
+      ${w.note?`<p><strong>Nota:</strong> ${escapeHtml(w.note)}</p>`:""}
+      ${(w.photos||[]).map((p,j)=>photoFig(p,`Merma · foto ${j+1}`)).join("")}
+    </div>`;
+  }).join(""):`<p>Sin mermas.</p>`;
+  return wrapReport("Inventario",`<h1>Reporte de Inventario</h1>
+    ${metaBox(t,`<p><strong>Día ${si.dayOfMonth}/${si.totalDays} — Turno ${t.slot===2?"Cierre":"Apertura"}</strong></p>
+    <p><strong>Validados:</strong> ${prog.done}/${prog.total} (${prog.pct}%) · <strong>Diferencias:</strong> ${diffs.length} · <strong>Mermas:</strong> ${waste.length}</p>
+    <p><strong>Mes cubierto:</strong> ${si.dayEnd}/${si.totalSkus} (${Math.round(si.dayEnd/si.totalSkus*100)}%)</p>`)}
+    <h2>Diferencias detectadas</h2>${diffTable}
+    <h2>Mermas del turno (${waste.length})</h2>${wasteHtml}
+    <h2>Validados (${validated.length})</h2>
+    ${validated.length?`<table><thead><tr><th>ID</th><th>Artículo</th><th>POS</th><th>Físico</th><th>Dif.</th><th>Nota</th></tr></thead><tbody>
+    ${validated.map(({s,l})=>{const d=Number(l.physical)-Number(l.pos);return `<tr><td>${escapeHtml(s.id)}</td><td>${escapeHtml(s.name)}</td>
+    <td>${l.pos}</td><td>${l.physical}</td><td class="${d>0?"ok":d<0?"err":""}">${d!==0?(d>0?"+":"")+d:"—"}</td><td>${escapeHtml(l.note||"")}</td></tr>`;}).join("")}
+    </tbody></table>`:"<p>Ninguno.</p>"}
+    ${pending.length?`<h2>Pendientes sin validar (${pending.length})</h2>
+    <table><thead><tr><th>ID</th><th>Artículo</th></tr></thead><tbody>
+    ${pending.map(({s})=>`<tr><td>${escapeHtml(s.id)}</td><td>${escapeHtml(s.name)}</td></tr>`).join("")}
+    </tbody></table>`:""}`);
+}
+
+function buildSalesReport(t){
+  const s=t.modules.sales; if(!s) return wrapReport("Ventas",`<h1>Sin datos.</h1>`);
+  const calc=salesCalc(s);
+  const wTable=(s.withdrawals||[]).length?`<table><thead><tr><th>Cajer@</th><th>Monto</th><th>Hora</th><th>Validado</th></tr></thead><tbody>
+    ${(s.withdrawals||[]).map(w=>`<tr><td>${escapeHtml(w.cashier||"")}</td><td>${fmtMoney(w.amount)}</td>
+    <td>${fmtTime(w.ts)}</td><td>${w.validated?"✓ Sí":"—"}</td></tr>`).join("")}
+    <tr><td colspan="4"><strong>Total retiros validados: ${fmtMoney(calc.totalRetiros)}</strong></td></tr>
+  </tbody></table>`:`<p>Sin retiros.</p>`;
+  const incTable=(s.incidences||[]).length?`<table><thead><tr><th>Producto</th><th>Motivo</th><th>Cant.</th><th>Monto</th></tr></thead><tbody>
+    ${(s.incidences||[]).map(x=>`<tr><td>${escapeHtml(resolveSkuName(x.skuId,x.skuName))}</td>
+    <td>${escapeHtml(x.reason||"")}</td><td>${x.qty||"—"}</td><td>${fmtMoney(x.amount)}</td></tr>`).join("")}
+    <tr><td colspan="4"><strong>Total devoluciones: ${fmtMoney(calc.totalDev)}</strong></td></tr>
+  </tbody></table>`:`<p>Sin devoluciones.</p>`;
+  return wrapReport("Ventas/Corte",`<h1>Reporte: Ventas / Corte de Caja</h1>
+    ${metaBox(t,`<p><strong>Cajer@:</strong> ${escapeHtml(s.cashier||"(no especificado)")}</p>
+    <p><strong>Inicio corte:</strong> ${s.startAt?fmtTime(s.startAt):"—"}</p>`)}
+    <div class="box" style="background:#f0fdf4;border-color:#86efac;">
+      <h2 style="border:none;margin-top:0;color:#14532d;">Resumen de caja</h2>
+      <p><strong>Ventas totales:</strong> ${fmtMoney(calc.total)}</p>
+      <p><strong>Tarjeta:</strong> ${fmtMoney(calc.card)}</p>
+      <p><strong>Retiros:</strong> ${fmtMoney(calc.totalRetiros)}</p>
+      <p><strong>Devoluciones:</strong> ${fmtMoney(calc.totalDev)}</p>
+      <p style="font-size:16px;margin-top:10px;border-top:1px solid #86efac;padding-top:10px;">
+        <strong>Efectivo esperado: <span style="color:#16a34a;">${fmtMoney(calc.efectivoEnCaja)}</span></strong></p>
+    </div>
+    <h2>Retiros de efectivo</h2>${wTable}
+    <h2>Devoluciones</h2>${incTable}
+    ${s.notes?`<h2>Notas</h2><p>${escapeHtml(s.notes)}</p>`:""}
+    <h2>Evidencia del corte</h2>
+    ${(s.photos||[]).length?(s.photos||[]).map((p,i)=>photoFig(p,`Corte · foto ${i+1}`)).join(""):"<p>Sin fotos.</p>"}
+    ${(s.withdrawals||[]).filter(w=>w.photos?.length).map(w=>w.photos.map((p,j)=>photoFig(p,`Retiro ${fmtTime(w.ts)} · foto ${j+1}`)).join("")).join("")}`);
+}
+
+function buildFinalReport(t){
+  const op=t.modules.operation, pur=ensurePurchases(t), inv=t.modules.inventory, sales=t.modules.sales;
+  const recs=pur.receipts||[], waste=inv?.waste||[];
+  const calc=sales?salesCalc(sales):null;
+  const todays=inv&&catalogStore.rows.length?inventorySlice(catalogStore.rows,t.dateKey,t.slot):[];
+  const invProg=inv?invProgress(inv,todays):{done:0,total:0,pct:0};
+  const opLabel=t.slot===2?"Cierre/Operación":"Apertura/Operación";
+  const statusRow=(label,ok,detail)=>`<tr>
+    <td>${label}</td>
+    <td class="${ok?"ok":"warn"}">${ok?"✅ Listo":"⏳ Pendiente"}</td>
+    <td style="color:#6b7280;">${detail}</td></tr>`;
+  return wrapReport("Reporte Final",`<h1>Reporte Final del Turno</h1>
+    ${metaBox(t,`<p><strong>Estado:</strong> <span class="${t.status==="closed"?"err":"ok"}">${t.status==="closed"?"CERRADO":"ABIERTO"}</span></p>`)}
+    <h2>Resumen de módulos</h2>
+    <table><thead><tr><th>Módulo</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>
+      ${statusRow(opLabel,op?.finalized,op?`${op.items?.filter(x=>x.done).length||0}/${op.items?.length||0} puntos`:"—")}
+      ${statusRow("Compras",recs.length?recs.every(r=>r.finalized):false,recs.length?`${recs.filter(r=>r.finalized).length}/${recs.length} facturas · ${fmtMoney(recs.reduce((a,r)=>a+Number(r.amount||0),0))}`:"Sin facturas")}
+      ${statusRow("Inventario",inv?.finalized,inv?`${invProg.done}/${invProg.total} (${invProg.pct}%) · ${waste.length} mermas`:"—")}
+      ${statusRow("Ventas/Corte",sales?.finalized,calc?`${fmtMoney(calc.total)} ventas · ${fmtMoney(calc.efectivoEnCaja)} efectivo`:"—")}
+    </tbody></table>
+    ${calc?`<h2>Resumen de caja</h2>
+    <div class="box" style="background:#f0fdf4;border-color:#86efac;">
+      <p><strong>Ventas totales:</strong> ${fmtMoney(calc.total)}</p>
+      <p><strong>Tarjeta:</strong> ${fmtMoney(calc.card)}</p>
+      <p><strong>Retiros:</strong> ${fmtMoney(calc.totalRetiros)}</p>
+      <p style="font-size:16px;margin-top:8px;border-top:1px solid #86efac;padding-top:8px;">
+        <strong>Efectivo en caja: <span style="color:#16a34a;">${fmtMoney(calc.efectivoEnCaja)}</span></strong></p>
+    </div>`:""}
+    ${recs.length?`<h2>Facturas</h2>
+    <table><thead><tr><th>Proveedor</th><th>Factura</th><th>Monto</th><th>Estado</th></tr></thead><tbody>
+    ${recs.map(r=>`<tr><td>${escapeHtml(r.supplier||"—")}</td><td>${escapeHtml(r.invoiceNo||"—")}</td>
+    <td>${fmtMoney(r.amount)}</td><td class="${r.finalized?"ok":"warn"}">${r.finalized?"✅":"⏳"}</td></tr>`).join("")}
+    <tr><td colspan="3"><strong>Total</strong></td><td><strong>${fmtMoney(recs.reduce((a,r)=>a+Number(r.amount||0),0))}</strong></td></tr>
+    </tbody></table>`:""}
+    ${waste.length?`<h2>Mermas (${waste.length})</h2>
+    <table><thead><tr><th>SKU</th><th>Artículo</th><th>Cant.</th><th>Motivo</th></tr></thead><tbody>
+    ${waste.map(w=>`<tr><td>${escapeHtml(w.skuId)}</td><td>${escapeHtml(resolveSkuName(w.skuId,w.skuName))}</td>
+    <td>${escapeHtml(w.qty)}</td><td>${escapeHtml(w.reason||"")}</td></tr>`).join("")}
+    </tbody></table>`:""}
+  `);
+}
+
+/* ════════════════════════════════════════════════════════════
+   SHEETS
+════════════════════════════════════════════════════════════ */
+function sheetStartTurn(slot){
+  openSheet(`
+    <h2 style="margin:0 0 4px;">${slot===1?"☀️ T1 — Apertura":"🌙 T2 — Cierre"}</h2>
+    <p class="small" style="margin-bottom:16px;">${SHIFT_TIMES[slot]}</p>
+    <div class="label">Nombre del encargado *</div>
+    <input class="input" id="stName" placeholder="Tu nombre" autocomplete="name"/>
+    <div class="label">Sucursal *</div>
+    <input class="input" id="stBranch" placeholder="Nombre de la sucursal"/>
+    <div class="hr"></div>
+    <button class="btn primary" data-action="stConfirm" data-slot="${slot}" style="margin-bottom:10px;">Abrir turno</button>
+    <button class="btn" data-action="sheetClose">Cancelar</button>
+  `);
+}
+
+function sheetEditSku(skuId){
+  const t=activeTurn(); if(!t||!catalogStore.rows.length) return;
+  const inv=ensureInventory(t);
+  const todays=inventorySlice(catalogStore.rows,t.dateKey,t.slot);
+  const sku=todays.find(s=>String(s.id)===String(skuId));
+  if(!sku){ toast("SKU no corresponde a este turno."); return; }
+  const line=getLine(inv,sku);
+  const done=invLineDone(line);
+  openSheet(`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+      <div>
+        <div style="font-weight:800;font-size:17px;">${escapeHtml(sku.name)}</div>
+        <div class="small">${escapeHtml(sku.id)}</div>
+      </div>
+      ${done?`<span class="pill g">✓ Validado</span>`:`<span class="pill w">Pendiente</span>`}
+    </div>
+    <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:14px;color:#93c5fd;">
+      1️⃣ Busca la cantidad en el <strong>POS</strong>. &nbsp; 2️⃣ Cuenta el físico.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px;">
+      <div>
+        <div class="label" style="margin-top:0;">POS (sistema) *</div>
+        <input class="input" id="skuPos" inputmode="numeric" value="${escapeHtml(line.pos||"")}"
+          placeholder="0" style="text-align:center;font-size:24px;font-weight:800;padding:14px 8px;" ${isLocked()?"disabled":""}/>
+      </div>
+      <div>
+        <div class="label" style="margin-top:0;">Físico (conteo) *</div>
+        <input class="input" id="skuPhy" inputmode="numeric" value="${escapeHtml(line.physical||"")}"
+          placeholder="0" style="text-align:center;font-size:24px;font-weight:800;padding:14px 8px;" ${isLocked()?"disabled":""}/>
+      </div>
+    </div>
+    <div id="diffPreview"></div>
+    <div class="label">Nota</div>
+    <input class="input" id="skuNote" value="${escapeHtml(line.note||"")}" placeholder="Observación…" ${isLocked()?"disabled":""}/>
+    <div class="hr"></div>
+    ${!isLocked()?`<button class="btn good" data-action="saveSku" data-sku="${escapeHtml(sku.id)}" style="margin-bottom:10px;">✓ Guardar</button>`:""}
+    <button class="btn" data-action="sheetClose">${isLocked()?"Cerrar":"Cancelar"}</button>
+  `);
+  function upd(){
+    const pos=$('#skuPos')?.value.trim(), phy=$('#skuPhy')?.value.trim(), el=$('#diffPreview');
+    if(!el||pos===""||phy===""){if(el){el.style.cssText="";el.textContent="";}return;}
+    const d=Number(phy)-Number(pos);
+    if(d===0){el.style.cssText="background:rgba(34,197,94,.1);color:var(--green);padding:10px;border-radius:10px;";el.textContent="✓ Sin diferencia";}
+    else if(d>0){el.style.cssText="background:rgba(245,158,11,.1);color:var(--amber);padding:10px;border-radius:10px;";el.textContent=`▲ Sobrante: +${d} unidades`;}
+    else{el.style.cssText="background:rgba(239,68,68,.1);color:var(--red);padding:10px;border-radius:10px;";el.textContent=`▼ Faltante: ${d} unidades`;}
+  }
+  ['#skuPos','#skuPhy'].forEach(sel=>{
+    const el=$(sel); if(el){ el.addEventListener('input',upd); el.addEventListener('change',upd); }
+  });
+  upd();
+}
+
+function sheetAddWaste(){
+  const t=activeTurn(); if(!t||isLocked()) return;
+  if(!catalogStore.rows.length){ toast("Importa catálogo primero."); return; }
+  openSheet(`
+    <h2 style="margin:0 0 14px;">Registrar merma</h2>
+    <div class="label">Buscar artículo</div>
+    <div id="wasteSkuSearch">
+      <div class="inputWrap">
+        <input class="input hasClear skuSearchInput" placeholder="Escribe ID o nombre…" autocomplete="off"/>
+        <button class="clearBtn hidden" type="button">✕</button>
+      </div>
+      <div style="margin:6px 0;">
+        <span class="badge" id="wSkuBadge">(sin seleccionar)</span>
+        <input type="hidden" id="wSkuId"/>
+        <input type="hidden" id="wSkuName"/>
+      </div>
+      <div class="skuResults"><div class="skuResultsMeta">Escribe para buscar…</div></div>
+    </div>
+    <div class="label">Cantidad *</div>
+    <input class="input" id="wQty" inputmode="numeric" placeholder="Ej. 2"/>
+    <div class="label">Motivo *</div>
+    <select class="select" id="wReason">
+      ${WASTE_REASONS.map(r=>`<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join("")}
+    </select>
+    <div id="wOtherWrap" class="hidden">
+      <div class="label">Especifica *</div>
+      <input class="input" id="wOther" placeholder="Describe el motivo…"/>
+    </div>
+    <div class="label">Nota</div>
+    <input class="input" id="wNote" placeholder="Detalle adicional…"/>
+    <div style="display:flex;align-items:center;gap:10px;margin:14px 0 8px;">
+      <button class="btn" data-action="wAddPhoto" style="flex:1;">📷 Fotos</button>
+      <span class="small" id="wPhotoCount">0/${LIMITS.wastePhotos}</span>
+    </div>
+    <div id="wThumbs"></div>
+    <div class="hr"></div>
+    <button class="btn good" data-action="wSave" style="margin-bottom:10px;">Guardar merma</button>
+    <button class="btn" data-action="sheetClose">Cancelar</button>
+  `);
+  rt._wastePhotos=[];
+  $('#wReason').addEventListener('change',()=>$('#wOtherWrap').classList.toggle('hidden',$('#wReason').value!=="Otro"));
+  buildSkuSearch('#wasteSkuSearch',$('#wSkuId'),$('#wSkuName'),$('#wSkuBadge'),null);
+}
+
+function sheetEditWaste(wId){
+  const t=activeTurn(); if(!t) return;
+  const inv=ensureInventory(t);
+  const w=(inv.waste||[]).find(x=>x.id===wId); if(!w) return;
+  const vk=w.photos?.length?storeVP(w.photos):"";
+  openSheet(`
+    <h2 style="margin:0 0 10px;">${escapeHtml(resolveSkuName(w.skuId,w.skuName))}</h2>
+    <div class="small" style="margin-bottom:14px;">${escapeHtml(w.skuId)}</div>
+    <div class="label">Cantidad *</div>
+    <input class="input" id="wQty" inputmode="numeric" value="${escapeHtml(w.qty)}"/>
+    <div class="label">Motivo *</div>
+    <select class="select" id="wReason">
+      ${WASTE_REASONS.map(r=>`<option value="${escapeHtml(r)}" ${w.reason===r?"selected":""}>${escapeHtml(r)}</option>`).join("")}
+    </select>
+    <div class="label">Nota</div>
+    <input class="input" id="wNote" value="${escapeHtml(w.note||"")}"/>
+    <div style="display:flex;align-items:center;gap:10px;margin:14px 0 8px;">
+      <button class="btn" data-action="wAddPhotoEdit" data-id="${wId}" style="flex:1;">📷 Fotos</button>
+      <span class="small">${(w.photos||[]).length}/${LIMITS.wastePhotos}</span>
+    </div>
+    ${(w.photos||[]).map((p,i)=>`<div class="photoCard" style="margin-bottom:8px;">
+      <img class="photoCard__img" src="${photoSrc(p)}" style="max-height:180px;cursor:pointer;"
+        data-action="viewPhoto" data-vk="${vk}" data-idx="${i}"/>
+      <div class="photoCard__bar">
+        <span class="photoCard__time">${fmtTime(p.ts)}</span>
+        <button class="btn sm danger" data-action="wDelPhoto" data-id="${wId}" data-idx="${i}">Eliminar</button>
+      </div>
+    </div>`).join("")}
+    <div class="hr"></div>
+    <button class="btn good" data-action="wSaveEdit" data-id="${wId}" style="margin-bottom:10px;">Guardar</button>
+    <button class="btn" data-action="sheetClose">Cerrar</button>
+  `);
+}
+
+function sheetAddWithdrawal(){
+  const t=activeTurn(); if(!t||isLocked()) return;
+  const s=ensureSales(t);
+  openSheet(`
+    <h2 style="margin:0 0 14px;">💸 Retiro de efectivo</h2>
+    <div class="label">Monto *</div>
+    <input class="input" id="wAmt" inputmode="decimal" placeholder="Ej. 500.00"/>
+    <div class="label">Cajer@ que retira *</div>
+    <input class="input" id="wCashier" value="${escapeHtml(s.cashier||"")}" placeholder="Nombre cajer@"/>
+    <div class="small" style="margin-top:6px;">Hora automática: ${new Date().toLocaleTimeString("es-MX")}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin:14px 0 8px;">
+      <button class="btn" data-action="wWAddPhoto" style="flex:1;">📷 Foto del dinero *</button>
+      <span class="small" id="wWCount">0/3</span>
+    </div>
+    <div id="wWThumbs"></div>
+    <div class="hr"></div>
+    <button class="btn good" data-action="wWSave" style="margin-bottom:10px;">Guardar retiro</button>
+    <button class="btn" data-action="sheetClose">Cancelar</button>
+  `);
+  rt._withdrawalPhotos=[];
+}
+
+function sheetIncSales(editId){
+  const t=activeTurn(); if(!t) return;
+  const s=ensureSales(t);
+  const ex=editId?(s.incidences||[]).find(x=>x.id===editId):null;
+  const hasCat=catalogStore.rows.length>0;
+  openSheet(`
+    <h2 style="margin:0 0 14px;">${ex?"Editar":"Nueva"} devolución</h2>
+    <input type="hidden" id="incEditId" value="${ex?ex.id:""}"/>
+    <input type="hidden" id="incSkuId" value="${ex?escapeHtml(ex.skuId||""):""}"/>
+    ${hasCat?`
+      <div class="label">Producto devuelto *</div>
+      <div id="incSkuSearch">
+        <div class="inputWrap">
+          <input class="input hasClear skuSearchInput" value="${ex?escapeHtml(ex.skuName||""):""}" placeholder="Busca en catálogo…" autocomplete="off"/>
+          <button class="clearBtn hidden" type="button">✕</button>
+        </div>
+        <div style="margin:6px 0;"><span class="badge" id="incSkuBadge">${ex&&ex.skuName?escapeHtml(ex.skuName):"(sin seleccionar)"}</span></div>
+        <input type="hidden" id="incSkuName" value="${ex?escapeHtml(ex.skuName||""):""}"/>
+        <div class="skuResults"><div class="skuResultsMeta">${ex?"Producto seleccionado.":"Escribe para buscar…"}</div></div>
+      </div>`:
+      `<div class="label">Producto *</div>
+      <input class="input" id="incSkuName" value="${ex?escapeHtml(ex.skuName||""):""}" placeholder="Nombre del producto"/>`}
+    <div class="label">Motivo *</div>
+    <select class="select" id="incReason">
+      <option value="">-- Selecciona --</option>
+      ${DEVOLUCION_MOTIVOS.map(m=>`<option value="${escapeHtml(m)}" ${ex?.reason===m?"selected":""}>${escapeHtml(m)}</option>`).join("")}
+    </select>
+    <div class="label">Cantidad *</div>
+    <input class="input" id="incQty" inputmode="numeric" value="${ex?.qty||""}" placeholder="Ej. 1"/>
+    <div class="label">Monto devuelto</div>
+    <input class="input" id="incAmt" inputmode="decimal" value="${ex?.amount||""}" placeholder="0.00"/>
+    <div class="hr"></div>
+    <button class="btn good" data-action="incSave" style="margin-bottom:10px;">Guardar</button>
+    <button class="btn" data-action="sheetClose">Cancelar</button>
+  `);
+  if(hasCat) buildSkuSearch('#incSkuSearch',$('#incSkuId'),$('#incSkuName'),$('#incSkuBadge'),null);
+}
+
+/* ════════════════════════════════════════════════════════════
+   SHARE / DOWNLOAD
+════════════════════════════════════════════════════════════ */
+async function shareOrDownload(files,{title="Bitácora",text="Reporte"}={}){
+  try{
+    if(navigator.canShare?.({files})){ await navigator.share({files,title,text}); return true; }
+  }catch(e){}
+  for(const f of files){
+    const url=URL.createObjectURL(f);
+    const a=document.createElement('a'); a.href=url; a.download=f.name; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  return false;
+}
+
+/* ════════════════════════════════════════════════════════════
+   CSV PARSER
+════════════════════════════════════════════════════════════ */
+function parseCatalogCSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(!lines.length) return [];
+  const header=lines[0].split(/[,;\t]/).map(h=>h.trim().toLowerCase().replace(/"/g,""));
+  const idC=header.findIndex(h=>h==="id"||h==="codigo"||h==="sku"||h==="clave");
+  const nmC=header.findIndex(h=>h.includes("art")||h.includes("nombre")||h.includes("name")||h.includes("desc"));
+  if(idC<0||nmC<0) return [];
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const cols=lines[i].split(/[,;\t]/).map(c=>c.trim().replace(/^"|"$/g,""));
+    const id=String(cols[idC]||"").trim(), name=String(cols[nmC]||"").trim();
+    if(id&&name) rows.push({id,name});
+  }
+  return rows;
+}
+
+/* ════════════════════════════════════════════════════════════
+   EVENT LISTENERS
+════════════════════════════════════════════════════════════ */
+$('#sheetBack').addEventListener('click',closeSheet);
+$('#backBtn').addEventListener('click',goBack);
+
+$('#tabBar').addEventListener('click',e=>{
+  const tab=e.target.closest('[data-tab]'); if(!tab) return;
+  const to=tab.getAttribute('data-tab');
+  const map={operation:'operation',purchases:'purchases',inventory:'inventory',sales:'sales',reports:'reports'};
+  if(map[to]){ rt.stack=[]; setRoute(map[to]); }
+});
+
+document.addEventListener('click',async e=>{
+  if(e.target.closest('#viewer')) return; // viewer handles its own clicks
+  const el=e.target.closest('[data-action]'); if(!el) return;
+  const action=el.getAttribute('data-action');
+  try{ await handleAction(action,el,e); }
+  catch(err){ console.error(err); toast("Error: "+(err?.message||err)); }
+});
+
+document.addEventListener('input',e=>{
+  const el=e.target, action=el.getAttribute('data-action'); if(!action) return;
+  try{ handleInput(action,el); }catch(err){ console.error(err); }
+});
+
+async function handleAction(action,el,e){
+  const t=activeTurn();
+
+  /* ── GLOBAL ── */
+  if(action==="sheetClose"){ closeSheet(); return; }
+  if(action==="viewPhoto"){
+    const vk=el.getAttribute('data-vk'), idx=Number(el.getAttribute('data-idx')||0);
+    const photos=_vStore[vk]; if(photos?.length) openViewer(photos,idx); return;
+  }
+  if(action==="go"){
+    const to=el.getAttribute('data-to');
+    if(to==="catalog") pushRoute('catalog');
+    return;
+  }
+  if(action==="_backOk"){ closeSheet(); saveState(); rt.route=rt.stack.pop()||{name:"home",params:{}}; render(); return; }
+
+  /* ── HOME ── */
+  if(action==="startTurn"){ sheetStartTurn(Number(el.getAttribute('data-slot'))); return; }
+  if(action==="stConfirm"){
+    const slot=Number(el.getAttribute('data-slot'));
+    const name=($('#stName')?.value||"").trim(), branch=($('#stBranch')?.value||"").trim();
+    if(!name) return toast("Nombre obligatorio.");
+    if(!branch) return toast("Sucursal obligatoria.");
+    const dk=dateKeyFrom(new Date()), res=openTurn(dk,slot,name,branch);
+    if(!res.ok){ toast(res.msg); return; }
+    rt.active={dateKey:dk,slot}; closeSheet(); setRoute('operation'); return;
+  }
+  if(action==="enterOpen"){
+    const ref=findOpenTurnToday(); if(!ref) return toast("No hay turno abierto.");
+    rt.active=ref; setRoute('operation'); return;
+  }
+  if(action==="enterTurn"){
+    const slot=Number(el.getAttribute('data-slot')), dk=dateKeyFrom(new Date());
+    if(!getTurn(dk,slot)) return toast("Turno no existe.");
+    rt.active={dateKey:dk,slot}; setRoute('operation'); return;
+  }
+  if(action==="viewFinal"){
+    const slot=Number(el.getAttribute('data-slot')), dk=dateKeyFrom(new Date());
+    const t2=getTurn(dk,slot); if(!t2) return toast("Turno no existe.");
+    rt.active={dateKey:dk,slot};
+    rt.report={title:"Reporte Final",filename:`reporte_final_${dk}_${slot}.html`,html:buildFinalReport(t2)};
+    pushRoute('reportPreview'); return;
+  }
+  if(action==="importCatalog"){ $('#csvPicker').value=""; $('#csvPicker').click(); return; }
+  if(action==="clearCatalog"){
+    if(!confirm("¿Eliminar el catálogo? Esto afectará el inventario.")) return;
+    catalogStore={rows:[],source:"",importedAt:null}; saveCatalog(); toast("Catálogo eliminado."); render(); return;
+  }
+
+  /* ── OPERATION ── */
+  if(action==="toggleCheck"){
+    if(isLocked()) return;
+    if(e.target.closest('button,input,textarea,select,a')) return;
+    const op=ensureOp(t), id=el.getAttribute('data-id');
+    const it=op.items.find(x=>x.id===id); if(!it) return;
+    const need=new Set(op.evidenceIds||[]);
+    if(!it.done&&need.has(id)&&!it.photos?.length){ toast("⚠ Este punto requiere foto antes de marcar."); return; }
+    it.done=!it.done; if(it.done) it.doneAt=nowISO(); else it.doneAt=null;
+    saveState(); render(); return;
+  }
+  if(action==="opAddPhoto"){
+    if(isLocked()) return;
+    const op=ensureOp(t), id=el.getAttribute('data-id');
+    const it=op.items.find(x=>x.id===id); if(!it) return;
+    await pickPhoto({maxAdd:LIMITS.opPhoto,current:it.photos.length,onAdd:photos=>{
+      it.photos=it.photos.concat(photos).slice(0,LIMITS.opPhoto); saveState(); render();
+    }}); return;
+  }
+  if(action==="opDelPhoto"){
+    if(isLocked()) return;
+    const op=ensureOp(t), id=el.getAttribute('data-id'), idx=Number(el.getAttribute('data-idx'));
+    const it=op.items.find(x=>x.id===id); if(!it) return;
+    it.photos.splice(idx,1);
+    const need=new Set(op.evidenceIds||[]);
+    if(need.has(id)&&it.done&&!it.photos.length){ it.done=false; toast("Se quitó la foto. Punto vuelve a pendiente."); }
+    saveState(); render(); return;
+  }
+  if(action==="opSave"){ saveState(); toast("✅ Progreso guardado."); return; }
+  if(action==="opFinalize"){
+    if(isLocked()) return;
+    const op=ensureOp(t);
+    if(!op.items.every(x=>x.done)){ toast("Marca todos los puntos primero."); return; }
+    const need=new Set(op.evidenceIds||[]);
+    const missing=op.items.filter(x=>need.has(x.id)&&!x.photos?.length);
+    if(missing.length){ toast(`Faltan fotos en ${missing.length} punto(s) obligatorios.`); return; }
+    op.finalized=true; op.endAt=nowISO(); saveState(); toast("✅ Finalizado."); render(); return;
+  }
+
+  /* ── PURCHASES ── */
+  if(action==="addReceipt"){ if(isLocked()) return; const r=newReceipt(t); pushRoute('receiptEdit',{id:r.id}); return; }
+  if(action==="openReceipt"){ pushRoute('receiptEdit',{id:el.getAttribute('data-id')}); return; }
+  if(action==="addInvPhoto"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    await pickPhoto({maxAdd:LIMITS.receiptPhotos,current:r.photos.length,onAdd:photos=>{r.photos=r.photos.concat(photos).slice(0,LIMITS.receiptPhotos);saveState();render();}});return;
+  }
+  if(action==="delInvPhoto"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    r.photos.splice(Number(el.getAttribute('data-idx')),1);saveState();render();return;
+  }
+  if(action==="addEvidPhoto"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    await pickPhoto({maxAdd:LIMITS.receiptEvidPhotos,current:r.incEvidencePhotos.length,onAdd:photos=>{r.incEvidencePhotos=r.incEvidencePhotos.concat(photos).slice(0,LIMITS.receiptEvidPhotos);saveState();render();}});return;
+  }
+  if(action==="delEvidPhoto"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    r.incEvidencePhotos.splice(Number(el.getAttribute('data-idx')),1);saveState();render();return;
+  }
+  if(action==="addInc"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    r.incidences.push({id:uid(),desc:"",qty:"",reason:"",incPhoto:null});saveState();render();return;
+  }
+  if(action==="delInc"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    r.incidences=r.incidences.filter(x=>x.id!==el.getAttribute('data-inc'));saveState();render();return;
+  }
+  if(action==="addIncPhoto"){
+    if(isLocked()) return;
+    const t2=activeTurn(), r=findReceipt(t2,el.getAttribute('data-id'));if(!r) return;
+    const inc=(r.incidences||[]).find(x=>x.id===el.getAttribute('data-inc'));if(!inc) return;
+    await pickPhoto({maxAdd:1,current:inc.incPhoto?1:0,onAdd:photos=>{if(photos[0])inc.incPhoto=photos[0];saveState();render();}});return;
+  }
+  if(action==="delIncPhoto"){
+    if(isLocked()) return;
+    const t2=activeTurn(), r=findReceipt(t2,el.getAttribute('data-id'));if(!r) return;
+    const inc=(r.incidences||[]).find(x=>x.id===el.getAttribute('data-inc'));if(!inc) return;
+    inc.incPhoto=null;saveState();render();return;
+  }
+  if(action==="addNP"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    r.newProducts.push({id:uid(),name:"",qty:"",photoFront:null,photoBarcode:null});saveState();render();return;
+  }
+  if(action==="delNP"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    r.newProducts=r.newProducts.filter(x=>x.id!==el.getAttribute('data-np'));saveState();render();return;
+  }
+  if(action==="addNPFront"||action==="addNPBarcode"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    const np=(r.newProducts||[]).find(x=>x.id===el.getAttribute('data-np')); if(!np) return;
+    const field=action==="addNPFront"?"photoFront":"photoBarcode";
+    await pickPhoto({maxAdd:1,current:np[field]?1:0,onAdd:photos=>{if(photos[0]){np[field]=photos[0];saveState();render();}}});return;
+  }
+  if(action==="delNPFront"||action==="delNPBarcode"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    const np=(r.newProducts||[]).find(x=>x.id===el.getAttribute('data-np')); if(!np) return;
+    np[action==="delNPFront"?"photoFront":"photoBarcode"]=null;saveState();render();return;
+  }
+  if(action==="finalizeReceipt"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    if(!r.supplier?.trim()) return toast("Proveedor obligatorio.");
+    if(!r.photos?.length) return toast("Agrega al menos 1 foto de la factura.");
+    r.finalized=true; r.endAt=nowISO(); saveState();
+    const file=new File([buildReceiptReport(t,r)],`compra_${t.dateKey}_${t.slot}_${r.id}.html`,{type:'text/html'});
+    const ok=await shareOrDownload([file],{title:"Compras",text:"Pre-reporte factura"});
+    if(!ok) toast("Archivo descargado."); else toast("Enviado.");
+    rt.stack=rt.stack.filter(x=>x.name!=="receiptEdit"); setRoute('purchases'); return;
+  }
+  if(action==="sendReceipt"){
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return toast("Factura no encontrada.");
+    rt.report={title:"Factura "+escapeHtml(r.supplier||""),filename:`compra_${t.dateKey}_${t.slot}_${r.id}.html`,html:buildReceiptReport(t,r)};
+    pushRoute('reportPreview'); return;
+  }
+  if(action==="previewReceipt"){
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return toast("Factura no encontrada.");
+    rt.report={title:"Factura "+escapeHtml(r.supplier||""),filename:`compra_${t.dateKey}_${t.slot}_${r.id}.html`,html:buildReceiptReport(t,r)};
+    pushRoute('reportPreview'); return;
+  }
+
+  /* ── INVENTORY ── */
+  if(action==="invFilter"){ rt.route={name:'inventory',params:{filter:el.getAttribute('data-filter')||'all'}}; render(); return; }
+  if(action==="invPending"){
+    if(!catalogStore.rows.length) return toast("Importa catálogo.");
+    const inv=ensureInventory(t);
+    const todays=inventorySlice(catalogStore.rows,t.dateKey,t.slot);
+    const first=todays.find(s=>!invLineDone(inv.lines[String(s.id)]));
+    if(first) sheetEditSku(first.id); else toast("¡Todo validado! ✅"); return;
+  }
+  if(action==="editSku"){ sheetEditSku(el.getAttribute('data-sku')); return; }
+  if(action==="saveSku"){
+    if(isLocked()) return;
+    const inv=ensureInventory(t), skuId=el.getAttribute('data-sku');
+    const todays=inventorySlice(catalogStore.rows,t.dateKey,t.slot);
+    const sku=todays.find(s=>String(s.id)===String(skuId)); if(!sku) return;
+    const line=getLine(inv,sku);
+    const posRaw=($('#skuPos')?.value||"").trim(), phyRaw=($('#skuPhy')?.value||"").trim();
+    const pos=posRaw===""?null:Number(posRaw), phy=phyRaw===""?null:Number(phyRaw);
+    if(pos!==null&&!isFinite(pos)) return toast("POS inválido.");
+    if(phy!==null&&!isFinite(phy)) return toast("Físico inválido.");
+    line.pos=pos; line.physical=phy; line.note=($('#skuNote')?.value||"").trim(); line.updatedAt=nowISO();
+    saveState(); closeSheet(); render(); return;
+  }
+  if(action==="addWaste"){ sheetAddWaste(); return; }
+  if(action==="editWaste"){ sheetEditWaste(el.getAttribute('data-id')); return; }
+  if(action==="wAddPhoto"){
+    await pickPhoto({maxAdd:LIMITS.wastePhotos,current:(rt._wastePhotos||[]).length,onAdd:photos=>{
+      rt._wastePhotos=(rt._wastePhotos||[]).concat(photos).slice(0,LIMITS.wastePhotos);
+      const n=rt._wastePhotos.length, vk=n?storeVP(rt._wastePhotos):"";
+      $('#wPhotoCount').textContent=`${n}/${LIMITS.wastePhotos}`;
+      $('#wThumbs').innerHTML=rt._wastePhotos.map((p,i)=>`<div class="photoCard" style="margin-bottom:8px;">
+        <img class="photoCard__img" src="${photoSrc(p)}" style="max-height:160px;cursor:pointer;" data-action="viewPhoto" data-vk="${vk}" data-idx="${i}"/>
+        <div class="photoCard__bar"><span class="photoCard__time">${fmtTime(p.ts)}</span>
+          <button class="btn sm danger" data-action="wDelTempPhoto" data-idx="${i}">Eliminar</button></div>
+      </div>`).join("");
+    }}); return;
+  }
+  if(action==="wDelTempPhoto"){
+    rt._wastePhotos.splice(Number(el.getAttribute('data-idx')),1);
+    const n=rt._wastePhotos.length, vk=n?storeVP(rt._wastePhotos):"";
+    $('#wPhotoCount').textContent=`${n}/${LIMITS.wastePhotos}`;
+    $('#wThumbs').innerHTML=rt._wastePhotos.map((p,i)=>`<div class="photoCard" style="margin-bottom:8px;">
+      <img class="photoCard__img" src="${photoSrc(p)}" style="max-height:160px;cursor:pointer;" data-action="viewPhoto" data-vk="${vk}" data-idx="${i}"/>
+      <div class="photoCard__bar"><span class="photoCard__time">${fmtTime(p.ts)}</span>
+        <button class="btn sm danger" data-action="wDelTempPhoto" data-idx="${i}">Eliminar</button></div>
+    </div>`).join(""); return;
+  }
+  if(action==="wSave"){
+    const inv=ensureInventory(t);
+    const skuId=($('#wSkuId')?.value||"").trim(); if(!skuId) return toast("Selecciona un artículo.");
+    const qty=Number(($('#wQty')?.value||"").trim()); if(!isFinite(qty)||qty<=0) return toast("Cantidad inválida.");
+    const reason=($('#wReason')?.value||"").trim(); if(!reason) return toast("Motivo obligatorio.");
+    let finalReason=reason;
+    if(reason==="Otro"){ const oth=($('#wOther')?.value||"").trim(); if(!oth) return toast("Especifica el motivo."); finalReason=oth; }
+    const photos=rt._wastePhotos||[]; if(!photos.length) return toast("Fotos obligatorias para merma.");
+    const skuName=resolveSkuName(skuId,"");
+    inv.waste.unshift({id:uid(),createdAt:nowISO(),skuId,skuName,qty,reason:finalReason,note:($('#wNote')?.value||"").trim(),photos});
+    rt._wastePhotos=[]; saveState(); closeSheet(); toast("Merma registrada."); render(); return;
+  }
+  if(action==="wAddPhotoEdit"){
+    const inv=ensureInventory(t), wId=el.getAttribute('data-id');
+    const w=(inv.waste||[]).find(x=>x.id===wId); if(!w) return;
+    await pickPhoto({maxAdd:LIMITS.wastePhotos,current:(w.photos||[]).length,onAdd:photos=>{
+      w.photos=(w.photos||[]).concat(photos).slice(0,LIMITS.wastePhotos);saveState();sheetEditWaste(wId);
+    }}); return;
+  }
+  if(action==="wDelPhoto"){
+    const inv=ensureInventory(t), wId=el.getAttribute('data-id');
+    const w=(inv.waste||[]).find(x=>x.id===wId); if(!w) return;
+    w.photos.splice(Number(el.getAttribute('data-idx')),1);saveState();sheetEditWaste(wId);return;
+  }
+  if(action==="wSaveEdit"){
+    const inv=ensureInventory(t), wId=el.getAttribute('data-id');
+    const w=(inv.waste||[]).find(x=>x.id===wId); if(!w) return;
+    const qty=Number(($('#wQty')?.value||"").trim()); if(!isFinite(qty)||qty<=0) return toast("Cantidad inválida.");
+    const reason=($('#wReason')?.value||"").trim(); if(!reason) return toast("Motivo obligatorio.");
+    if(!(w.photos||[]).length) return toast("Fotos obligatorias.");
+    w.qty=qty; w.reason=reason; w.note=($('#wNote')?.value||"").trim();
+    saveState(); toast("Merma actualizada."); closeSheet(); render(); return;
+  }
+  if(action==="invSend"){
+    if(!t?.modules?.inventory) return toast("Sin inventario.");
+    rt.report={title:"Inventario",filename:`inventario_${t.dateKey}_${t.slot}.html`,html:buildInvReport(t)};
+    pushRoute('reportPreview'); return;
+  }
+  if(action==="invClose"){
+    if(isLocked()) return;
+    const inv=ensureInventory(t);
+    const todays=inventorySlice(catalogStore.rows,t.dateKey,t.slot);
+    const prog=invProgress(inv,todays);
+    if(prog.done<prog.total) return toast(`Faltan ${prog.total-prog.done} artículo(s) por validar.`);
+    inv.finalized=true; inv.endAt=nowISO(); saveState(); toast("Inventario cerrado."); render(); return;
+  }
+
+  /* ── SALES ── */
+  if(action==="startCorte"){
+    if(isLocked()) return;
+    const s=ensureSales(t);
+    s.corteStarted=true; s.startAt=nowISO(); saveState(); render(); toast("✅ Corte iniciado: "+fmtTime(s.startAt)); return;
+  }
+  if(action==="addWithdrawal"){ sheetAddWithdrawal(); return; }
+  if(action==="delWithdrawal"){
+    if(isLocked()) return;
+    const s=ensureSales(t); s.withdrawals=s.withdrawals.filter(x=>x.id!==el.getAttribute('data-id'));
+    saveState(); render(); return;
+  }
+  if(action==="validateW"){
+    if(isLocked()) return;
+    const s=ensureSales(t), w=(s.withdrawals||[]).find(x=>x.id===el.getAttribute('data-id')); if(!w) return;
+    w.validated=el.checked; w.validatedAt=el.checked?nowISO():null; saveState(); render(); return;
+  }
+  if(action==="wWAddPhoto"){
+    await pickPhoto({maxAdd:3,current:(rt._withdrawalPhotos||[]).length,onAdd:photos=>{
+      rt._withdrawalPhotos=(rt._withdrawalPhotos||[]).concat(photos).slice(0,3);
+      const n=rt._withdrawalPhotos.length, vk=n?storeVP(rt._withdrawalPhotos):"";
+      $('#wWCount').textContent=`${n}/3`;
+      $('#wWThumbs').innerHTML=rt._withdrawalPhotos.map((p,i)=>`<div class="photoCard" style="margin-bottom:8px;">
+        <img class="photoCard__img" src="${photoSrc(p)}" style="max-height:140px;" data-action="viewPhoto" data-vk="${vk}" data-idx="${i}"/>
+        <div class="photoCard__bar"><span class="photoCard__time">${fmtTime(p.ts)}</span>
+          <button class="btn sm danger" data-action="wWDelPhoto" data-idx="${i}">Eliminar</button></div>
+      </div>`).join("");
+    }}); return;
+  }
+  if(action==="wWDelPhoto"){
+    rt._withdrawalPhotos.splice(Number(el.getAttribute('data-idx')),1);
+    const n=rt._withdrawalPhotos.length, vk=n?storeVP(rt._withdrawalPhotos):"";
+    $('#wWCount').textContent=`${n}/3`;
+    $('#wWThumbs').innerHTML=rt._withdrawalPhotos.map((p,i)=>`<div class="photoCard" style="margin-bottom:8px;">
+      <img class="photoCard__img" src="${photoSrc(p)}" style="max-height:140px;" data-action="viewPhoto" data-vk="${vk}" data-idx="${i}"/>
+      <div class="photoCard__bar"><span class="photoCard__time">${fmtTime(p.ts)}</span>
+        <button class="btn sm danger" data-action="wWDelPhoto" data-idx="${i}">Eliminar</button></div>
+    </div>`).join(""); return;
+  }
+  if(action==="wWSave"){
+    const s=ensureSales(t);
+    const amt=parseMoney($('#wAmt')?.value||""); if(!amt||amt<=0) return toast("Monto inválido.");
+    const cashier=($('#wCashier')?.value||"").trim(); if(!cashier) return toast("Cajer@ obligatorio.");
+    if(!(rt._withdrawalPhotos||[]).length) return toast("Foto del dinero obligatoria.");
+    s.withdrawals.push({id:uid(),amount:amt,cashier,ts:nowISO(),photos:rt._withdrawalPhotos.slice(0,3),validated:false,validatedAt:null});
+    rt._withdrawalPhotos=[]; saveState(); closeSheet(); toast("Retiro registrado."); render(); return;
+  }
+  if(action==="addSalesPhoto"){
+    if(isLocked()) return;
+    const s=ensureSales(t);
+    await pickPhoto({maxAdd:LIMITS.salesPhotos,current:s.photos.length,onAdd:photos=>{s.photos=s.photos.concat(photos).slice(0,LIMITS.salesPhotos);saveState();render();}}); return;
+  }
+  if(action==="delSalesPhoto"){
+    if(isLocked()) return;
+    const s=ensureSales(t); s.photos.splice(Number(el.getAttribute('data-idx')),1); saveState(); render(); return;
+  }
+  if(action==="addInc2"){ sheetIncSales(null); return; }
+  if(action==="editInc"){ sheetIncSales(el.getAttribute('data-id')); return; }
+  if(action==="delInc2"){
+    if(isLocked()) return;
+    const s=ensureSales(t); s.incidences=s.incidences.filter(x=>x.id!==el.getAttribute('data-id'));
+    saveState(); render(); return;
+  }
+  if(action==="incSave"){
+    const s=ensureSales(t);
+    const editId=$('#incEditId')?.value||"";
+    const skuId=($('#incSkuId')?.value||"").trim();
+    const skuName=($('#incSkuName')?.value||"").trim(); if(!skuName) return toast("Selecciona un producto.");
+    const reason=($('#incReason')?.value||"").trim(); if(!reason) return toast("Motivo obligatorio.");
+    const qtyRaw=($('#incQty')?.value||"").trim();
+    const qty=qtyRaw===""?null:Number(qtyRaw); if(qty!==null&&(!isFinite(qty)||qty<=0)) return toast("Cantidad inválida.");
+    const amtRaw=($('#incAmt')?.value||"").trim();
+    const amount=amtRaw===""?0:parseMoney(amtRaw);
+    if(editId){
+      const inc=(s.incidences||[]).find(x=>x.id===editId);
+      if(inc){inc.skuId=skuId;inc.skuName=skuName;inc.reason=reason;inc.qty=qty;inc.amount=amount;}
+    } else {
+      s.incidences.push({id:uid(),skuId,skuName,reason,qty,amount});
+    }
+    saveState(); closeSheet(); render(); return;
+  }
+  if(action==="finalizeSales"){
+    if(isLocked()) return;
+    const s=ensureSales(t);
+    if(!s.corteStarted) return toast("Inicia el corte primero.");
+    if(!s.cashier?.trim()) return toast("Cajer@ obligatorio.");
+    if(!isFinite(Number(s.total))||Number(s.total)<0) return toast("Ventas totales inválidas.");
+    if(!isFinite(Number(s.card))||Number(s.card)<0) return toast("Ventas tarjeta inválidas.");
+    if(!s.photos?.length) return toast("Foto del corte obligatoria.");
+    s.finalized=true; s.endAt=nowISO(); saveState(); toast("Corte finalizado."); render(); return;
+  }
+  if(action==="salesSend"){
+    if(!t?.modules?.sales) return toast("Sin datos de ventas.");
+    rt.report={title:"Ventas/Corte",filename:`ventas_${t.dateKey}_${t.slot}.html`,html:buildSalesReport(t)};
+    pushRoute('reportPreview'); return;
+  }
+
+  /* ── REPORTS ── */
+  if(action==="previewOp"){
+    const op=t?.modules?.operation; if(!op||!op.finalized) return;
+    rt.report={title:`${t.slot===2?"Cierre":"Apertura"}/Operación`,filename:`apertura_${t.dateKey}_${t.slot}.html`,html:buildOpReport(t)};
+    pushRoute('reportPreview'); return;
+  }
+  if(action==="previewInv"){
+    if(!t?.modules?.inventory) return;
+    rt.report={title:"Inventario",filename:`inventario_${t.dateKey}_${t.slot}.html`,html:buildInvReport(t)};
+    pushRoute('reportPreview'); return;
+  }
+  if(action==="previewSales"){
+    if(!t?.modules?.sales) return;
+    rt.report={title:"Ventas/Corte",filename:`ventas_${t.dateKey}_${t.slot}.html`,html:buildSalesReport(t)};
+    pushRoute('reportPreview'); return;
+  }
+  if(action==="previewFinal"){
+    rt.report={title:"Reporte Final",filename:`final_${t.dateKey}_${t.slot}.html`,html:buildFinalReport(t)};
+    pushRoute('reportPreview'); return;
+  }
+  if(action==="closeTurnAndSend"){
+    if(!t) return;
+    if(t.status==="closed"){ toast("Turno ya cerrado."); return; }
+    closeTurn(t.dateKey,t.slot);
+    const t2=activeTurn();
+    const file=new File([buildFinalReport(t2)],`final_${t2.dateKey}_${t2.slot}.html`,{type:'text/html'});
+    const ok=await shareOrDownload([file],{title:"Reporte Final",text:"Turno"});
+    if(!ok) toast("Archivo descargado. Turno cerrado."); else toast("Turno finalizado y enviado.");
+    setRoute('reports'); return;
+  }
+  if(action==="sendReport"){
+    if(!rt.report) return;
+    const file=new File([rt.report.html],rt.report.filename,{type:'text/html'});
+    const ok=await shareOrDownload([file],{title:rt.report.title,text:"Reporte"});
+    if(!ok) toast("Archivo descargado."); return;
+  }
+  if(action==="downloadReport"){
+    if(!rt.report) return;
+    const a=document.createElement('a'); a.href='data:text/html;charset=utf-8,'+encodeURIComponent(rt.report.html);
+    a.download=rt.report.filename; a.click(); return;
+  }
+  if(action==="printReport"){
+    try{ $('#reportFrame').contentWindow.focus(); $('#reportFrame').contentWindow.print(); }
+    catch(_){ window.print(); } return;
+  }
+}
+
+function handleInput(action,el){
+  const t=activeTurn(); if(!t) return;
+  if(action==="opNote"){
+    if(isLocked()) return;
+    const op=ensureOp(t), it=op.items.find(x=>x.id===el.getAttribute('data-id'));
+    if(it){it.note=el.value||"";saveState();}return;
+  }
+  if(action==="rcptSupplier"||action==="rcptInvoiceNo"||action==="rcptAmount"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')); if(!r) return;
+    if(action==="rcptSupplier") r.supplier=el.value||"";
+    else if(action==="rcptInvoiceNo") r.invoiceNo=el.value||"";
+    else if(action==="rcptAmount"){const n=parseMoney(el.value);if(isFinite(n))r.amount=n;}
+    saveState(); return;
+  }
+  if(action==="incDesc"||action==="incQty"||action==="incReason"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')),inc=(r?.incidences||[]).find(x=>x.id===el.getAttribute('data-inc')); if(!inc) return;
+    if(action==="incDesc") inc.desc=el.value||"";
+    else if(action==="incQty") inc.qty=el.value||"";
+    else if(action==="incReason") inc.reason=el.value||"";
+    saveState(); return;
+  }
+  if(action==="npName"||action==="npQty"){
+    if(isLocked()) return;
+    const r=findReceipt(t,el.getAttribute('data-id')),np=(r?.newProducts||[]).find(x=>x.id===el.getAttribute('data-np')); if(!np) return;
+    if(action==="npName") np.name=el.value||"";
+    else if(action==="npQty") np.qty=el.value||"";
+    saveState(); return;
+  }
+  if(action==="salesCashier"||action==="salesTotal"||action==="salesCard"||action==="salesNotes"){
+    if(isLocked()) return;
+    const s=ensureSales(t);
+    if(action==="salesCashier") s.cashier=el.value||"";
+    else if(action==="salesTotal"){const n=parseMoney(el.value);if(isFinite(n))s.total=n;}
+    else if(action==="salesCard"){const n=parseMoney(el.value);if(isFinite(n))s.card=n;}
+    else if(action==="salesNotes") s.notes=el.value||"";
+    saveState(); return;
+  }
+}
+
+/* ── CSV picker ── */
+$('#csvPicker').addEventListener('change',async e=>{
+  const f=e.target.files?.[0]; if(!f) return;
+  try{
+    const text=await f.text();
+    const rows=parseCatalogCSV(text);
+    if(!rows.length){ toast("CSV sin filas válidas (se necesitan columnas ID y Artículo)."); return; }
+    catalogStore={rows,source:f.name,importedAt:nowISO()};
+    saveCatalog(); toast(`✅ Catálogo: ${rows.length} SKUs.`); render();
+  }catch(ex){ toast("Error al leer CSV: "+ex.message); }
+});
+
+/* ════════════════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════════════════ */
+migrateAll();
+purgeOldData();
+setTimeout(()=>{
+  const total=(JSON.stringify(appState).length+JSON.stringify(photoStore).length)/1024;
+  if(total>4200) toast(`⚠ Storage al ${Math.round(total/51.2)}% — libera fotos antiguas`,4000);
+},2000);
+const _ref=findOpenTurnToday();
+if(_ref){ rt.active=_ref; rt.route={name:'operation',params:{}}; }
+else { rt.route={name:'home',params:{}}; }
+render();
+
+})();
+</script>
+</body>
+</html>
